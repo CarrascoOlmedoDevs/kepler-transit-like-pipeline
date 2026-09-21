@@ -1,0 +1,8 @@
+.stats{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+.triage-badge{display:inline-block;padding:2px 8px;border:1px solid var(--edge);border-radius:20px;font-size:11px}
+.triage-prioritario{background:rgba(62,207,142,.12);box-shadow:inset 4px 0 #3ecf8e}
+.triage-prioritario .triage-badge{color:#8ff0bd;border-color:#3a8f68;font-weight:700}
+.triage-revisar{background:rgba(244,190,80,.08);box-shadow:inset 4px 0 #d8a43c}
+.triage-revisar .triage-badge{color:#ffd37a;border-color:#866b35}
+.triage-descartable{opacity:.72}
+.triage-descartable .triage-badge,.triage-débil .triage-badge,.triage-debil .triage-badge{color:var(--muted)}

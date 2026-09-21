@@ -54,15 +54,23 @@ def make_server(root=ROOT, port=8768, manager=None):
             try:
                 if path == '/api/state':
                     return self.send(dict(application='kepler-local-panel', token=token, jobs=manager.snapshot()))
+                if path == '/api/cnn':
+                    return self.send(manager.cnn_details())
+                if path == '/api/discovery':
+                    return self.send(manager.discovery_details())
                 if len(parts) == 3 and parts[:2] == ['api', 'jobs']:
                     return self.send(manager.details(parts[2]))
                 if len(parts) == 4 and parts[:2] == ['api', 'results']:
                     target = manager.result_path(parts[2], parts[3], 'candidates.csv')
                     with target.open(encoding='utf-8', newline='') as stream:
-                        return self.send(list(csv.DictReader(stream)))
+                        from kepler_detector.triage import assess_candidate
+                        rows = list(csv.DictReader(stream))
+                        for row in rows:
+                            row.update(assess_candidate(row))
+                        return self.send(rows)
                 if len(parts) == 4 and parts[0] == 'files':
                     target = manager.result_path(parts[1], parts[2], parts[3])
-                elif path in ('/', '/app.js', '/style.css'):
+                elif path in ('/', '/app.js', '/style.css', '/triage.css'):
                     target = Path(root) / 'local_panel/static' / ('index.html' if path == '/' else path[1:])
                 else:
                     return self.send({'error': 'No encontrado'}, 404)
@@ -84,6 +92,19 @@ def make_server(root=ROOT, port=8768, manager=None):
                 if path == '/api/jobs':
                     job = manager.create(data.get('kics'))
                     return self.send({'id': job}, 201)
+                if path == '/api/cnn/start':
+                    manager.start_cnn(data.get('operation'), data.get('options'))
+                    return self.send({'ok': True}, 202)
+                if path == '/api/cnn/stop':
+                    manager.stop_cnn()
+                    return self.send({'ok': True})
+                if path == '/api/discovery/start':
+                    return self.send(manager.start_discovery(), 202)
+                if path == '/api/discovery/replenish':
+                    return self.send(manager.replenish_discovery(), 201)
+                if path == '/api/discovery/stop':
+                    manager.stop_discovery()
+                    return self.send({'ok': True})
                 parts = path.strip('/').split('/')
                 if len(parts) == 4 and parts[:2] == ['api', 'jobs']:
                     manager.action(parts[2], parts[3])

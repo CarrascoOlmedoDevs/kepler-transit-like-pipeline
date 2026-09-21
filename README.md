@@ -389,9 +389,33 @@ tracebacks van a `logs/pipeline.log`; la consola sólo muestra resumen de cada f
 ## Extensiones y reproducibilidad
 
 `features.binned_views` produce vistas globales de 2001 bins y locales de 201 bins,
-con cuentas y NaN donde no hay cobertura. RF está desacoplado de estas vistas:
-se puede añadir una CNN tipo AstroNet y ensemble sin cambiar BLS. Esta versión
-no incluye entrenamiento CNN ni promete rendimiento de AstroNet.
+con cuentas y NaN donde no hay cobertura. RF está desacoplado de estas vistas.
+Además, el módulo experimental `kepler_detector.cnn` implementa una CNN compacta
+inspirada en la metodología ExoMiner con ramas global, local, odd/even y secundaria,
+más las 25 features escalares existentes. TensorFlow sigue siendo opcional. Cuando
+el modelo está disponible, `scan` añade `cnn_probability` como diagnóstico, sin
+modificar el vetting ni `priority_score`.
+
+Puede utilizarse desde el panel local o desde consola, sin alterar Pipeline 2.0:
+
+```powershell
+pip install -r requirements-cnn.txt
+python kepler_rf_detector.py cnn-build
+python kepler_rf_detector.py cnn-train
+python kepler_rf_detector.py cnn-evaluate
+```
+
+La metodología, límites y artefactos están documentados en
+[`docs/EXOMINER_LITE.md`](docs/EXOMINER_LITE.md). Es un experimento propio: no usa
+pesos de NASA ExoMiner y su score clasifica etiquetas DR25, no valida planetas.
+
+Para preparar objetivos inéditos compatibles se puede descargar la entrega estelar
+uniforme Q1-Q17 DR25 y crear una cola sin KOI ni estrellas usadas por la CNN:
+
+```powershell
+python kepler_rf_detector.py stellar-catalog
+python kepler_rf_detector.py discovery-targets --limit 250
+```
 
 `anomaly.fit_anomaly(frame, output)` entrena y guarda un IsolationForest opcional;
 `anomaly_scores(model, frame)` devuelve rareza (más alto = más anómalo), no probabilidad

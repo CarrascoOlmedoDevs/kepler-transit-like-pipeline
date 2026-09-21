@@ -40,7 +40,10 @@ def claim_evaluation(out, jobdir):
 def prepare_scan(root, work, ids):
     for name in ('data', 'models', 'cache/lightcurves', 'results'):
         (work / name).mkdir(parents=True, exist_ok=True)
-    for name in ('models/kepler_rf.joblib', 'data/koi_dr25.csv', 'data/tce_dr25.csv'):
+    for name in ('models/kepler_rf.joblib',
+                 'models/kepler_exominer_lite.keras',
+                 'models/kepler_exominer_lite_metadata.json',
+                 'data/koi_dr25.csv', 'data/tce_dr25.csv'):
         source = root / name
         if source.exists() and not (work / name).exists():
             shutil.copy2(source, work / name)
@@ -74,6 +77,8 @@ def finish_blind(root, out, state, runtime):
 
 def run(root, job):
     root = Path(root)
+    from kepler_detector.evidence import ensure_one_time_backfill
+    ensure_one_time_backfill(root)
     if job == 'blind' and (root / 'results/blind_evaluation/evaluation_manifest.json').exists():
         from blind_resume import run as resume_frozen
         return resume_frozen(root, job)
@@ -131,6 +136,13 @@ def run(root, job):
             state['stars'][str(kic)] = status
             state.update(current=None)
             write(folder / 'state.json', state)
+            if status == 'complete':
+                try:
+                    from kepler_detector.evidence import record_serious_evidence
+                    record_serious_evidence(root, job, kic, work / f'results/KIC_{kic}')
+                except Exception as error:
+                    # The scientific result remains valid if the convenience report cannot be written.
+                    print(f'AVISO informe de evidencias KIC {kic}: {error}', flush=True)
             print(f'FIN KIC {kic}: {status}', flush=True)
         else:
             if blind:

@@ -14,6 +14,22 @@ ni los trabajos: usar Pausar o Detener antes de apagar el ordenador.
   archivando antes sus archivos parciales y el registro original.
 - Detener: cancela el proceso propio y sus descendientes; conserva archivos y progreso.
 
+## ExoMiner-lite
+
+El panel incluye un módulo experimental separado para construir las cinco vistas
+morfológicas, entrenar la CNN y volver a evaluar el conjunto test. Muestra si están
+disponibles el dataset escalar, las vistas, TensorFlow y el modelo, además del
+registro y las métricas generadas. TensorFlow se instala de forma opcional con
+`pip install -r requirements-cnn.txt`; el panel no instala dependencias por sí solo.
+
+ExoMiner-lite comparte la restricción de un único proceso activo con las colas KIC.
+No modifica el vetting, `priority_score` ni la evaluación ciega congelada.
+Su score representa compatibilidad con la etiqueta DR25, no validación planetaria.
+
+Tras entrenar el modelo, los nuevos análisis copian la CNN a su workspace aislado y
+añaden `cnn_probability` a las tablas, sin modificar el ranking RF. La cola piloto
+oficial se genera con `stellar-catalog` y `discovery-targets`.
+
 Los intentos fallidos no se reejecutan automáticamente. Los resultados de nuevas
 colas están aislados en `results/local_panel/<id>/workspace`; se copian las curvas
 cacheadas, el modelo y catálogos existentes, sin borrar los originales.

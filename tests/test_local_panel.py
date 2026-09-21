@@ -99,9 +99,16 @@ class LocalPanelTests(unittest.TestCase):
         path = self.root / 'cache/lightcurves/KIC_00000123.npz'
         path.parent.mkdir(parents=True)
         path.write_bytes(b'cached curve')
+        cnn_model = self.root / 'models/kepler_exominer_lite.keras'
+        cnn_model.parent.mkdir(parents=True)
+        cnn_model.write_bytes(b'cnn')
+        cnn_metadata = self.root / 'models/kepler_exominer_lite_metadata.json'
+        cnn_metadata.write_text('{}')
         prepare_scan(self.root, self.root / 'isolated', [123])
         self.assertEqual(path.read_bytes(), b'cached curve')
         self.assertEqual((self.root / 'isolated/cache/lightcurves/KIC_00000123.npz').read_bytes(), path.read_bytes())
+        self.assertEqual((self.root / 'isolated/models/kepler_exominer_lite.keras').read_bytes(), b'cnn')
+        self.assertTrue((self.root / 'isolated/models/kepler_exominer_lite_metadata.json').exists())
 
     def test_blind_import_preserves_attempt(self):
         out = self.root / 'results/blind_evaluation'
@@ -129,6 +136,47 @@ class LocalPanelTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.manager.result_path(job, '123', 'candidates.csv')
 
+    def test_cnn_state_launch_and_successful_completion(self):
+        details = self.manager.cnn_details()
+        self.assertEqual(details['status'], 'ready')
+        self.assertIn('tensorflow', details['artifacts'])
+        captured = {}
+        def launch(args, **kwargs):
+            captured['args'] = args
+            captured['kwargs'] = kwargs
+            return self.proc
+        self.manager.launcher = launch
+        self.manager.start_cnn('train', {'epochs': 3, 'batch_size': 8, 'test_size': 0.2, 'seed': 7})
+        self.assertIn('cnn-train', captured['args'])
+        self.assertEqual(captured['args'][captured['args'].index('--epochs') + 1], '3')
+        with self.assertRaises(ValueError):
+            self.manager.create('789')
+        self.proc.returncode = 0
+        self.assertEqual(self.manager.cnn_details()['status'], 'completed')
+
+    def test_discovery_automation_advances_in_ten_star_batches(self):
+        batches = self.root / 'data/discovery_batches'
+        batches.mkdir(parents=True)
+        for number, start in ((1, 1), (2, 11)):
+            rows = 'queue_rank,kepid\n' + ''.join(
+                f'{rank},{1000 + rank}\n' for rank in range(start, start + 10))
+            (batches / f'batch_{number:02d}.csv').write_text(rows, encoding='utf-8')
+
+        automation = self.manager.start_discovery()
+        first = self.manager.active
+        first_state = read(self.manager.jobdir(first) / 'state.json')
+        self.assertTrue(automation['enabled'])
+        self.assertEqual(first_state['batch_index'], 1)
+        self.assertEqual(len(first_state['ids']), 10)
+
+        first_state['status'] = 'completed'
+        write(self.manager.jobdir(first) / 'state.json', first_state)
+        self.proc.returncode = 0
+        self.manager.snapshot()
+        second_state = read(self.manager.jobdir(self.manager.active) / 'state.json')
+        self.assertNotEqual(self.manager.active, first)
+        self.assertEqual(second_state['batch_index'], 2)
+
     def test_http_csrf_host_origin_and_static(self):
         server = make_server(self.root, 0, self.manager)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -145,10 +193,12 @@ class LocalPanelTests(unittest.TestCase):
         try:
             status, state = request('GET', '/api/state')
             self.assertEqual(status, 200)
+            self.assertEqual(request('GET', '/api/cnn')[0], 200)
             self.assertEqual(request('GET','/api/state',headers={'Host':'evil.example'})[0],403)
             self.assertEqual(request('POST','/api/jobs',{'kics':'123'})[0],403)
             headers = {'Content-Type':'application/json', 'X-Panel-Token':state['token']}
             self.assertEqual(request('POST','/api/jobs',{'kics':'123'}, {**headers,'Origin':'https://evil.example'})[0],403)
+            self.assertEqual(request('POST','/api/cnn/start',{'operation':'invalid'},headers)[0],400)
             self.assertEqual(request('POST','/api/jobs',{'kics':'123'},headers)[0],201)
         finally:
             server.shutdown()

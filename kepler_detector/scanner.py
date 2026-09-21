@@ -119,10 +119,14 @@ def build_families(rows, candidates, time):
 
 def signature(root, config, no_model=False):
     model = root / 'models/kepler_rf.joblib'
+    cnn_model = root / 'models/kepler_exominer_lite.keras'
+    cnn_metadata = root / 'models/kepler_exominer_lite_metadata.json'
     catalog = root / 'data/koi_dr25.csv'
     return fingerprint({'config': config.to_dict(), 'feature_version': FEATURE_VERSION, 'pipeline_version': PIPELINE_VERSION,
                         'feature_schema_hash': FEATURE_SCHEMA_HASH,
                         'model': file_hash(model) if model.exists() and not no_model else None,
+                        'cnn_model': file_hash(cnn_model) if cnn_model.exists() and not no_model else None,
+                        'cnn_metadata': file_hash(cnn_metadata) if cnn_metadata.exists() and not no_model else None,
                         'catalog': file_hash(catalog) if catalog.exists() else None})
 
 
@@ -134,6 +138,13 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None):
     output.mkdir(parents=True, exist_ok=True)
     meta_path = output / 'metadata.json'
     artifact = None if no_model else load_model(root)
+    cnn_predictor = None
+    if not no_model:
+        try:
+            from .cnn import load_predictor
+            cnn_predictor = load_predictor(root)
+        except RuntimeError as error:
+            logger.warning('CNN no disponible: %s', error)
     sig = signature(root, config, no_model)
     if meta_path.exists() and not force:
         previous = json.loads(meta_path.read_text(encoding='utf-8'))
@@ -195,9 +206,17 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None):
             break
         rf = float(predict(artifact, [features])[0]) if artifact is not None else np.nan
         combined = {**features, **consistency}
+        cnn_probability = np.nan
+        if cnn_predictor is not None:
+            try:
+                from .cnn import predict_candidate
+                cnn_probability = predict_candidate(cnn_predictor, residual, selected, features)
+            except ValueError as error:
+                logger.warning('KIC %s: candidato CNN no medible: %s', kic, error)
         vetting = vet(combined, config.min_snr, config.min_transits)
         row = {'kepid': int(kic), 'detection_order': iteration + 1, 'epoch_bkjd': selected.epoch,
                **combined, 'rf_probability': rf, 'rf_available': artifact is not None,
+               'cnn_probability': cnn_probability, 'cnn_available': cnn_predictor is not None,
                **vetting,
                'priority_score': priority_score(combined, rf, vetting['vetting_flags']),
                **match(kic, selected.period, catalog, config.match_tolerance, tce_catalog)}
@@ -212,7 +231,8 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None):
                    masked_fraction=removed_fraction)
         rows.append(row)
         found.append(selected)
-        logger.info('KIC %s: candidato P=%.6fd SNR=%.2f RF=%s', kic, selected.period, features['depth_snr'], rf)
+        logger.info('KIC %s: candidato P=%.6fd SNR=%.2f RF=%s CNN=%s',
+                    kic, selected.period, features['depth_snr'], rf, cnn_probability)
     plotting.periodogram(first_result, output / 'bls_periodogram.png')
     families = build_families(rows, found, curve.time) if rows else []
     raw = pd.DataFrame(rows)
@@ -240,6 +260,7 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None):
                  'duration_at_boundary': sum(bool(row['duration_at_boundary']) for row in rows),
                  'stop_reason': stop_reason, 'seconds': time.monotonic() - started,
                  'rf_available': artifact is not None, 'mask_width_duration_range': [1.5, 4.0],
+                 'cnn_available': cnn_predictor is not None,
                  'warning': 'Candidatos de tránsito; no confirmación ni descubrimiento planetario'}, meta_path)
     logger.info('KIC %s finalizado: %d detecciones, %d familias, %.1fs',
                 kic, len(rows), len(families), time.monotonic() - started)

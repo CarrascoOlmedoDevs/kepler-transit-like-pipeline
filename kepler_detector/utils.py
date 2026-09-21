@@ -52,14 +52,26 @@ def atomic_csv(frame, path):
     path = Path(path)
     temp = path.with_suffix('.csv.tmp')
     frame.to_csv(temp, index=False)
-    os.replace(temp, path)
+    _replace_with_retry(temp, path)
 
 
 def atomic_json(value, path):
     path = Path(path)
     temp = path.with_suffix('.json.tmp')
     temp.write_text(json.dumps(value, indent=2, ensure_ascii=False, allow_nan=False), encoding='utf-8')
-    os.replace(temp, path)
+    _replace_with_retry(temp, path)
+
+
+def _replace_with_retry(temp, path, attempts=40):
+    """Replace an artifact despite brief Windows reader/antivirus locks."""
+    for attempt in range(attempts):
+        try:
+            os.replace(temp, path)
+            return
+        except PermissionError:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(min(0.5, 0.025 * (attempt + 1)))
 
 
 def fingerprint(value):

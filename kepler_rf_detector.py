@@ -27,12 +27,13 @@ def analysis_options(parser):
 def parser():
     main = argparse.ArgumentParser(description='Candidatos de tránsito Kepler con BLS, RF y vetting; no confirma planetas.')
     commands = main.add_subparsers(dest='command', required=True)
-    for name in ('catalog', 'build', 'train', 'scan', 'targets', 'scan-list', 'evaluate'):
+    for name in ('catalog', 'build', 'train', 'scan', 'targets', 'scan-list', 'evaluate',
+                 'cnn-build', 'cnn-train', 'cnn-evaluate'):
         sub = commands.add_parser(name)
         sub.add_argument('--root', type=Path, default=Path(__file__).resolve().parent, help='Directorio de datos/modelos/resultados')
-        if name in ('catalog', 'build', 'scan', 'targets', 'scan-list'):
+        if name in ('catalog', 'build', 'scan', 'targets', 'scan-list', 'cnn-build'):
             sub.add_argument('--force', action='store_true', help='Rehacer resultados; reutiliza FITS/curvas cacheadas')
-        if name in ('build', 'scan', 'scan-list'):
+        if name in ('build', 'scan', 'scan-list', 'cnn-build'):
             analysis_options(sub)
         if name == 'build':
             sub.add_argument('--per-class', type=int, default=500)
@@ -50,6 +51,13 @@ def parser():
         if name == 'scan-list':
             sub.add_argument('--input', type=Path, required=True)
             sub.add_argument('--workers', type=int, default=1)
+        if name == 'cnn-build':
+            sub.add_argument('--limit', type=int, help='Máximo de ejemplos nuevos; útil para smoke tests')
+        if name == 'cnn-train':
+            sub.add_argument('--seed', type=int, default=42)
+            sub.add_argument('--test-size', type=float, default=0.25)
+            sub.add_argument('--epochs', type=int, default=60)
+            sub.add_argument('--batch-size', type=int, default=32)
     return main
 
 
@@ -57,7 +65,7 @@ def main(argv=None):
     args = parser().parse_args(argv)
     root = setup(args.root.resolve())
     try:
-        config = Config(**{name: getattr(args, name) for name in Config.__dataclass_fields__}) if args.command in ('build', 'scan', 'scan-list') else None
+        config = Config(**{name: getattr(args, name) for name in Config.__dataclass_fields__}) if args.command in ('build', 'scan', 'scan-list', 'cnn-build') else None
         if args.command == 'catalog':
             from kepler_detector.catalog import get_catalog
             print(f'{len(get_catalog(root, args.force))} KOI en {root / "data/koi_dr25.csv"}')
@@ -72,6 +80,15 @@ def main(argv=None):
             print(json.dumps(train(root, args.seed, args.test_size), indent=2))
         elif args.command == 'evaluate':
             from kepler_detector.ml import evaluate
+            print(json.dumps(evaluate(root), indent=2))
+        elif args.command == 'cnn-build':
+            from kepler_detector.cnn import build_dataset
+            print(json.dumps(build_dataset(root, config, args.force, args.limit), indent=2))
+        elif args.command == 'cnn-train':
+            from kepler_detector.cnn import train
+            print(json.dumps(train(root, args.seed, args.test_size, args.epochs, args.batch_size), indent=2))
+        elif args.command == 'cnn-evaluate':
+            from kepler_detector.cnn import evaluate
             print(json.dumps(evaluate(root), indent=2))
         elif args.command == 'scan':
             from kepler_detector.scanner import scan

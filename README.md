@@ -1,12 +1,12 @@
 # Kepler Transit-Like Signal Pipeline
 
-### Pipeline open source de búsqueda, vetting y benchmarking de señales transit-like en Kepler
+### Pipeline de búsqueda, vetting y benchmarking de señales transit-like en Kepler
 
 **Autor: Javier Carrasco**
 
 [![Pipeline](https://img.shields.io/badge/pipeline-2.0-45b8ac)](#benchmark-ciego-pipeline-20)
 [![Python](https://img.shields.io/badge/Python-3.11-3776ab)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-Proprietary-red)](LICENSE)
 
 Proyecto ejecutable en **Python 3.11 / Windows 10–11**. Descarga curvas reales de
 Kepler desde MAST usando Lightkurve, busca caídas periódicas con BLS, vuelve a medir
@@ -17,6 +17,22 @@ El repositorio implementa el flujo completo: descarga y caché de curvas Kepler,
 preprocesamiento, búsqueda BLS iterativa, refinamiento adaptativo de duración,
 masking, deduplicación global, familias y armónicos, extracción de features,
 Random Forest, vetting físico, ranking y una evaluación end-to-end ciega.
+
+## Licencia y estado del desarrollo
+
+El desarrollo actual del proyecto es **propietario**. El uso, copia, modificación,
+redistribución o explotación de las versiones propietarias requiere autorización
+escrita del titular. Consulte [`LICENSE`](LICENSE).
+
+**Pipeline 2.0 tuvo una publicación histórica bajo Apache License 2.0.** Ese cambio
+de licencia no revoca los derechos que ya hubieran sido concedidos sobre copias de
+aquellas versiones históricas. La frontera exacta de licencias y los commits
+correspondientes están documentados en
+[`LICENSE_HISTORY.md`](LICENSE_HISTORY.md).
+
+Las librerías de terceros y los datos astronómicos públicos conservan sus propias
+licencias y condiciones. La licencia propietaria del proyecto no reclama propiedad
+sobre observaciones públicas, catálogos de terceros ni hechos científicos.
 
 ## Benchmark ciego Pipeline 2.0
 

@@ -11,6 +11,7 @@ outputs/
 kepler-site-paused.tar.gz
 web_resultados/
 desktop_launchers/
+ANALIZAR_ESTRELLA.bat
 FILE_TREE.txt
 .pytest_cache/
 .coverage

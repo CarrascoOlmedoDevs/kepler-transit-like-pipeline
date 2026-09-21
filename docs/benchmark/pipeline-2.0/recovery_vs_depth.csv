@@ -1,0 +1,6 @@
+bin,N,recovered_fundamental,recovery_percent
+<200,0,0,
+200–<500,0,0,
+500–<1000,0,0,
+1000–3000,0,0,
+>3000,0,0,

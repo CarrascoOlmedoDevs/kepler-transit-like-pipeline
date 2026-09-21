@@ -1,0 +1,145 @@
+BLIND END-TO-END EVALUATION  PIPELINE 2.0
+==========================================
+Stars:                         92/92
+Known KOI candidates:         123
+
+Fundamental raw:              75/123 (61.0%)
+Fundamental families:         73/123 (59.3%)
+Fundamental + harmonic:       77/123 (62.6%)
+
+Top 1 (fundamental):          49/123 (39.8%)
+Top 3 (fundamental):          72/123 (58.5%)
+Top 5 (fundamental):          73/123 (59.3%)
+Top 10 (fundamental):          73/123 (59.3%)
+
+Stars >=1 recovered:          57/92 (62.0%)
+
+Multiplanet systems:
+all: 15/22
+partial: 1/22
+none: 6/22
+
+Median rank:                  1.0
+Mean rank:                    1.452054794520548
+MRR (all 123 KOI):            0.485
+
+RF positive | BLS fundamental: 60/75 (80.0%)
+RF positive | BLS any:         60/77 (77.9%)
+
+Median families/star:         5.0
+Median unmatched/star:        4.0
+Median unmatched above KOI:   0.0
+
+Runtime total (active wall):  2936.1 s
+Mean runtime/star:            108.1 s
+
+Known Pipeline 2.0 issues:
+- possible resonance/harmonic family collision
+
+KIC 10854555 CONTROL (excluded):
+period = 2.5255863089597264
+known period = 2.525591777
+period error (%) = 0.00021650530870649518
+rank = 1.0
+status = PASS
+
+ADDITIONAL METRICS
+BLIND END-TO-END EVALUATION
+----------------------------
+Stars:                         92
+Known CANDIDATE KOIs:           123
+
+Fundamental recovered:         75/123 (61.0%)
+Fundamental+harmonic:           77/123 (62.6%)
+
+Top 1 (fundamental):           49/123 (39.8%)
+Top 3 (fundamental):           72/123 (58.5%)
+Top 5 (fundamental):           73/123 (59.3%)
+Top 10 (fundamental):           73/123 (59.3%)
+
+Stars >=1 recovered:           57/92 (62.0%)
+Multiplanet systems all:       15/22 (68.2%)
+
+Median rank (fundamental):     1.0
+MRR (fundamental, all KOIs):   0.485
+
+RF positive | BLS recovered:   60/75 (80.0%)
+
+Median families/star:          5.0
+Median unmatched/star:         4.0
+Failed/interrupted stars:      0
+
+Runtime (official wall):       2936.1 s
+Mean task runtime/star:        108.1 s
+
+KIC 10854555 control (excluded):
+P detected = 2.5255863089597264
+status = PASS
+
+Full fundamental/harmonic, per-star, rank and burden metrics: summary.json
+Unmatched means no match to the frozen CANDIDATE reference set.
+Default 5-detection limit retained; top 10 equals top 5 by construction.
+
+ADDITIONAL METRICS (fixed denominators)
+fundamental_family: 73/123 (59.3%)
+harmonic_raw: 2/123 (1.6%)
+not_recovered: 46/123 (37.4%)
+harmonic_top
+  1: 0/123 (0.0%)
+  3: 2/123 (1.6%)
+  5: 2/123 (1.6%)
+  10: 2/123 (1.6%)
+combined_top
+  1: 49/123 (39.8%)
+  3: 74/123 (60.2%)
+  5: 75/123 (61.0%)
+  10: 75/123 (61.0%)
+per_star
+  any_recovered: 57/92 (62.0%)
+  any_fundamental: 55/92 (59.8%)
+  any_top_5: 57/92 (62.0%)
+  any_top_1: 49/92 (53.3%)
+  any_top_3: 56/92 (60.9%)
+  any_top_10: 57/92 (62.0%)
+multiplanet
+  all: 15/22 (68.2%)
+  partial: 1/22 (4.5%)
+  none: 6/22 (27.3%)
+rank_fundamental: {"median": 1.0, "mean": 1.452054794520548, "mrr_all_koi": 0.48536585365853663, "mrr_recovered": 0.8178082191780822, "distribution": {"1": 49, "2-3": 23, "4-5": 1, "6-10": 0, ">10": 0}}
+rank_combined: {"median": 1.0, "mean": 1.4666666666666666, "mrr_all_koi": 0.4934959349593496, "mrr_recovered": 0.8093333333333333, "distribution": {"1": 49, "2-3": 25, "4-5": 1, "6-10": 0, ">10": 0}}
+Median unmatched families above recovered KOI: 0.0
+Median all families above recovered KOI: 0.0
+
+Harmonic family recovery: 2/123 (1.6%)
+
+RECOVERY BY PERIOD
+    bin  N  recovered_fundamental  recovery_percent
+     <3 14                      8         57.142857
+  3–<10 43                     25         58.139535
+ 10–<30 44                     31         70.454545
+30–<100 14                      6         42.857143
+100–300  6                      5         83.333333
+   >300  2                      0          0.000000
+
+RECOVERY BY DEPTH
+      bin  N  recovered_fundamental recovery_percent
+     <200  0                      0             None
+ 200–<500  0                      0             None
+500–<1000  0                      0             None
+1000–3000  0                      0             None
+    >3000  0                      0             None
+
+RECOVERY BY TRANSIT_COUNT
+   bin  N  recovered_fundamental  recovery_percent
+    <3  0                      0               NaN
+   3–4  2                      0          0.000000
+  5–10  6                      6        100.000000
+ 11–30 10                      5         50.000000
+31–100 36                     23         63.888889
+  >100 69                     41         59.420290
+
+not_recovered.csv includes raw misses, harmonic-only recoveries and raw-to-family losses.
+Unknown causes are not inferred as masking/low SNR without evidence.
+Original active wall until user pause + sequential completed panel tasks before coordinator + coordinator official wall. Pauses and control excluded; aborted task CPU time not estimated.
+
+Depth analysis: unavailable: frozen local catalog has no koi_depth column; no detector-derived substitute used

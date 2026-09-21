@@ -1,0 +1,2 @@
+KNOWN ISSUE PIPELINE 2.0: possible resonance/harmonic family collision (KIC 5219234). Not corrected in this evaluation.
+No detector changes or tuning authorized in this run.

@@ -1,0 +1,29 @@
+{
+  "verified_at": "2026-09-21T11:17:37.538722+00:00",
+  "status": "PASS",
+  "stars": 92,
+  "koi": 123,
+  "scientific_source_model_inputs_unchanged": true,
+  "original_22_outputs_unchanged": true,
+  "one_to_one_assignment_verified": true,
+  "rf_and_priority_unmodified": true,
+  "raw_detections": 407,
+  "candidate_families": 386,
+  "output_hashes": {
+    "koi_results.csv": "d995d06cb4c345825b2aadb9395aeba1fed4dee6849243a7ad3891ae07bcac8c",
+    "star_results.csv": "170571dad88da4c67c7974fe9996c7f75186ca73070aa1b075188e083daa9c40",
+    "summary.json": "609265b6547435e3790513d4bede17aa72f3bf177a9a3ef1aedee56a0d703374",
+    "summary.txt": "10daac3b1c742608abff9ab69922f338ac20329d287c6d15e52ca59a3c005342",
+    "evaluation_manifest.json": "823e6015b9b2f21bc550d789bd51ed89cf3124b065652a1bba22c1ca6dc638e9",
+    "not_recovered.csv": "012589e4a9bcd45be6a51a10773f97f2cd26efb367b9fe78d27203c570e16060",
+    "rf_false_negatives.csv": "77119d438a0d6f8b9c90db370e5652ab1bbcb0c05ec8570b27aed7e2c6cb2743",
+    "control_results.csv": "b8032b19dee0ef9fcb5de7c038c9eaa66a1b9325668bae149a55726a6125eb52",
+    "recovery_by_rank.png": "261a15300cc1bedad393dc51054b4a6998845b024e9c7557f3a504cc509a96bb",
+    "recovery_vs_period.png": "6b4018d511ca4bff590519be7d29b55d7e2a05ccf401cc82bd4abcb99c44fb14",
+    "recovery_vs_depth.png": "0dc7c8d30bafca2e2dc0700d70b1e73e3dd42f33ac9bcf3aebeb4605ea104c28",
+    "recovery_vs_transit_count.png": "8eb816d2b2460304ef81f6dd3aefa2fb91f02daf276161f49aee541f03002481",
+    "period_error_histogram.png": "aedf00a0bea0b05ffce41f414bc36f78bd061f57ecf6a43324111f9576a17270",
+    "rf_probability_recovered.png": "9aefda2f98e0eb889a3d723f398b472aa1961a2475fe6a068e18e8a38b1f0db6",
+    "candidate_families_per_star.png": "a458215e8d46ce0b523fca4d429233a77aa65ce704ff71110a121e73c20b23e6"
+  }
+}

@@ -1,0 +1,326 @@
+{
+  "total_koi": 123,
+  "total_stars": 92,
+  "fundamental_raw": {
+    "n": 75,
+    "denominator": 123,
+    "percent": 60.97560975609756
+  },
+  "fundamental_family": {
+    "n": 73,
+    "denominator": 123,
+    "percent": 59.34959349593496
+  },
+  "harmonic_raw": {
+    "n": 2,
+    "denominator": 123,
+    "percent": 1.6260162601626016
+  },
+  "fundamental_plus_harmonic_raw": {
+    "n": 77,
+    "denominator": 123,
+    "percent": 62.60162601626016
+  },
+  "not_recovered": {
+    "n": 46,
+    "denominator": 123,
+    "percent": 37.39837398373984
+  },
+  "fundamental_top": {
+    "1": {
+      "n": 49,
+      "denominator": 123,
+      "percent": 39.83739837398374
+    },
+    "3": {
+      "n": 72,
+      "denominator": 123,
+      "percent": 58.53658536585366
+    },
+    "5": {
+      "n": 73,
+      "denominator": 123,
+      "percent": 59.34959349593496
+    },
+    "10": {
+      "n": 73,
+      "denominator": 123,
+      "percent": 59.34959349593496
+    }
+  },
+  "harmonic_top": {
+    "1": {
+      "n": 0,
+      "denominator": 123,
+      "percent": 0.0
+    },
+    "3": {
+      "n": 2,
+      "denominator": 123,
+      "percent": 1.6260162601626016
+    },
+    "5": {
+      "n": 2,
+      "denominator": 123,
+      "percent": 1.6260162601626016
+    },
+    "10": {
+      "n": 2,
+      "denominator": 123,
+      "percent": 1.6260162601626016
+    }
+  },
+  "combined_top": {
+    "1": {
+      "n": 49,
+      "denominator": 123,
+      "percent": 39.83739837398374
+    },
+    "3": {
+      "n": 74,
+      "denominator": 123,
+      "percent": 60.16260162601626
+    },
+    "5": {
+      "n": 75,
+      "denominator": 123,
+      "percent": 60.97560975609756
+    },
+    "10": {
+      "n": 75,
+      "denominator": 123,
+      "percent": 60.97560975609756
+    }
+  },
+  "per_star": {
+    "any_recovered": {
+      "n": 57,
+      "denominator": 92,
+      "percent": 61.95652173913044
+    },
+    "any_fundamental": {
+      "n": 55,
+      "denominator": 92,
+      "percent": 59.78260869565217
+    },
+    "any_top_5": {
+      "n": 57,
+      "denominator": 92,
+      "percent": 61.95652173913044
+    },
+    "any_top_1": {
+      "n": 49,
+      "denominator": 92,
+      "percent": 53.26086956521739
+    },
+    "any_top_3": {
+      "n": 56,
+      "denominator": 92,
+      "percent": 60.869565217391305
+    },
+    "any_top_10": {
+      "n": 57,
+      "denominator": 92,
+      "percent": 61.95652173913044
+    }
+  },
+  "multiplanet": {
+    "all": {
+      "n": 15,
+      "denominator": 22,
+      "percent": 68.18181818181819
+    },
+    "partial": {
+      "n": 1,
+      "denominator": 22,
+      "percent": 4.545454545454546
+    },
+    "none": {
+      "n": 6,
+      "denominator": 22,
+      "percent": 27.272727272727273
+    }
+  },
+  "rf_positive_given_bls_fundamental": {
+    "n": 60,
+    "denominator": 75,
+    "percent": 80.0
+  },
+  "rf_missing_given_bls_fundamental": 0,
+  "rank_combined": {
+    "median": 1.0,
+    "mean": 1.4666666666666666,
+    "mrr_all_koi": 0.4934959349593496,
+    "mrr_recovered": 0.8093333333333333,
+    "distribution": {
+      "1": 49,
+      "2-3": 25,
+      "4-5": 1,
+      "6-10": 0,
+      ">10": 0
+    }
+  },
+  "rank_fundamental": {
+    "median": 1.0,
+    "mean": 1.452054794520548,
+    "mrr_all_koi": 0.48536585365853663,
+    "mrr_recovered": 0.8178082191780822,
+    "distribution": {
+      "1": 49,
+      "2-3": 23,
+      "4-5": 1,
+      "6-10": 0,
+      ">10": 0
+    }
+  },
+  "median_families_per_star": 5.0,
+  "median_unmatched_families_per_star": 4.0,
+  "median_unmatched_above_recovered": 0.0,
+  "median_families_above_recovered": 0.0,
+  "completed_stars": 92,
+  "failed_stars": 0,
+  "runtime_total_seconds": 2936.0720910000173,
+  "runtime_mean_per_star_seconds": 108.08638043478119,
+  "runtime_sum_star_seconds": 9943.94699999987,
+  "harmonic_family": {
+    "n": 2,
+    "denominator": 123,
+    "percent": 1.6260162601626016
+  },
+  "rf_positive_given_bls_any": {
+    "n": 60,
+    "denominator": 77,
+    "percent": 77.92207792207792
+  },
+  "known_issues": [
+    "KNOWN ISSUE PIPELINE 2.0: possible resonance/harmonic family collision (KIC 5219234). Not corrected in this evaluation."
+  ],
+  "frozen_inputs_unchanged": true,
+  "original_22_outputs_unchanged": true,
+  "runtime_definition": "Original active wall until user pause + sequential completed panel tasks before coordinator + coordinator official wall. Pauses and control excluded; aborted task CPU time not estimated.",
+  "ranking_definition": "Top K fundamental family rank; MRR denominator all 123 KOI; unmatched/unassigned rank contributes zero. Combined metrics separate.",
+  "max_detections": 5,
+  "top10_limitation": "Default max_planets=5 retained; Top10 cannot exceed Top5.",
+  "unmatched_definition": "No eligible period+phase edge to the frozen CANDIDATE reference set; not a physical false-positive label.",
+  "elapsed_calendar_seconds_including_pauses": 6456.49695,
+  "control": {
+    "kepid": 10854555,
+    "status": "PASS",
+    "detected_period": 2.5255863089597264,
+    "known_period": 2.525591777,
+    "period_error_percent": 0.00021650530870649518,
+    "rank": 1.0,
+    "seconds": 115.56199999997625
+  },
+  "recovery_vs_period": [
+    {
+      "bin": "<3",
+      "N": 14,
+      "recovered_fundamental": 8,
+      "recovery_percent": 57.1428571429
+    },
+    {
+      "bin": "3–<10",
+      "N": 43,
+      "recovered_fundamental": 25,
+      "recovery_percent": 58.1395348837
+    },
+    {
+      "bin": "10–<30",
+      "N": 44,
+      "recovered_fundamental": 31,
+      "recovery_percent": 70.4545454545
+    },
+    {
+      "bin": "30–<100",
+      "N": 14,
+      "recovered_fundamental": 6,
+      "recovery_percent": 42.8571428571
+    },
+    {
+      "bin": "100–300",
+      "N": 6,
+      "recovered_fundamental": 5,
+      "recovery_percent": 83.3333333333
+    },
+    {
+      "bin": ">300",
+      "N": 2,
+      "recovered_fundamental": 0,
+      "recovery_percent": 0.0
+    }
+  ],
+  "recovery_vs_depth": [
+    {
+      "bin": "<200",
+      "N": 0,
+      "recovered_fundamental": 0,
+      "recovery_percent": null
+    },
+    {
+      "bin": "200–<500",
+      "N": 0,
+      "recovered_fundamental": 0,
+      "recovery_percent": null
+    },
+    {
+      "bin": "500–<1000",
+      "N": 0,
+      "recovered_fundamental": 0,
+      "recovery_percent": null
+    },
+    {
+      "bin": "1000–3000",
+      "N": 0,
+      "recovered_fundamental": 0,
+      "recovery_percent": null
+    },
+    {
+      "bin": ">3000",
+      "N": 0,
+      "recovered_fundamental": 0,
+      "recovery_percent": null
+    }
+  ],
+  "recovery_vs_transit_count": [
+    {
+      "bin": "<3",
+      "N": 0,
+      "recovered_fundamental": 0,
+      "recovery_percent": null
+    },
+    {
+      "bin": "3–4",
+      "N": 2,
+      "recovered_fundamental": 0,
+      "recovery_percent": 0.0
+    },
+    {
+      "bin": "5–10",
+      "N": 6,
+      "recovered_fundamental": 6,
+      "recovery_percent": 100.0
+    },
+    {
+      "bin": "11–30",
+      "N": 10,
+      "recovered_fundamental": 5,
+      "recovery_percent": 50.0
+    },
+    {
+      "bin": "31–100",
+      "N": 36,
+      "recovered_fundamental": 23,
+      "recovery_percent": 63.8888888889
+    },
+    {
+      "bin": ">100",
+      "N": 69,
+      "recovered_fundamental": 41,
+      "recovery_percent": 59.4202898551
+    }
+  ],
+  "missing_depth_count": 123,
+  "depth_analysis_status": "unavailable: frozen local catalog has no koi_depth column; no detector-derived substitute used",
+  "transit_count_definition": "Count unique nearest KOI event indices with >=1 finite cached timestamp within max(KOI duration/2, 1765.5/86400/2) days. Before preprocessing; coverage proxy, not independently detected transits."
+}

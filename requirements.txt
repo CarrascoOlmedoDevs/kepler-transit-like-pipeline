@@ -1,0 +1,12 @@
+numpy==1.26.4
+pandas==2.2.3
+scipy==1.14.1
+matplotlib==3.9.4
+astropy==6.1.7
+lightkurve==2.5.1
+scikit-learn==1.5.2
+joblib==1.4.2
+requests==2.32.3
+tqdm==4.67.1
+# Compatibilidad transitiva con Matplotlib 3.9 (evita avisos de API en pyparsing 3.3).
+pyparsing==3.2.1

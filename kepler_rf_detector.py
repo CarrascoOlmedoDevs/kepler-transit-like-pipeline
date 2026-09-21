@@ -1,0 +1,90 @@
+"""CLI Windows/Python 3.11. Importar este módulo no lanza procesos."""
+import argparse
+import json
+import logging
+from pathlib import Path
+from config import Config
+from kepler_detector.utils import setup
+
+
+def analysis_options(parser):
+    parser.add_argument('--period-min', type=float, default=0.5, help='Días; modo search')
+    parser.add_argument('--period-max', type=float, default=300.0, help='Días; limitado también por baseline')
+    parser.add_argument('--durations', type=float, nargs='+', default=[0.05, 0.1, 0.2, 0.3, 0.45], help='Duraciones BLS en días')
+    parser.add_argument('--flatten-window', type=float, default=5.0, help='Ventana de detrending en días')
+    parser.add_argument('--sigma-clip', type=float, default=7.0, help='Clipping superior, preserva caídas')
+    parser.add_argument('--coarse-points', type=int, default=30000)
+    parser.add_argument('--refine-peaks', type=int, default=12)
+    parser.add_argument('--max-planets', type=int, default=5, help='Máximo de candidatos, no planetas confirmados')
+    parser.add_argument('--min-snr', type=float, default=7.1)
+    parser.add_argument('--min-transits', type=int, default=2)
+    parser.add_argument('--match-tolerance', type=float, default=0.01, help='Diferencia fraccional de período, 0.01=1%%')
+    parser.add_argument('--quarter', type=int, choices=range(18), help='Sólo para pruebas pequeñas; por defecto todos')
+    parser.add_argument('--save-curves', action='store_true')
+    parser.add_argument('--seed', type=int, default=42)
+
+
+def parser():
+    main = argparse.ArgumentParser(description='Candidatos de tránsito Kepler con BLS, RF y vetting; no confirma planetas.')
+    commands = main.add_subparsers(dest='command', required=True)
+    for name in ('catalog', 'build', 'train', 'scan', 'targets', 'scan-list', 'evaluate'):
+        sub = commands.add_parser(name)
+        sub.add_argument('--root', type=Path, default=Path(__file__).resolve().parent, help='Directorio de datos/modelos/resultados')
+        if name in ('catalog', 'build', 'scan', 'targets', 'scan-list'):
+            sub.add_argument('--force', action='store_true', help='Rehacer resultados; reutiliza FITS/curvas cacheadas')
+        if name in ('build', 'scan', 'scan-list'):
+            analysis_options(sub)
+        if name == 'build':
+            sub.add_argument('--per-class', type=int, default=500)
+        if name in ('build', 'scan-list'):
+            sub.add_argument('--retry-failed', action='store_true')
+        if name == 'train':
+            sub.add_argument('--seed', type=int, default=42)
+            sub.add_argument('--test-size', type=float, default=0.25)
+        if name in ('scan', 'scan-list'):
+            sub.add_argument('--no-model', action='store_true', help='Diagnóstico explícito sin RF; probability=NaN')
+        if name == 'scan':
+            sub.add_argument('--kic', type=int, required=True)
+        if name in ('targets', 'scan-list'):
+            sub.add_argument('--limit', type=int, default=1000 if name == 'targets' else None)
+        if name == 'scan-list':
+            sub.add_argument('--input', type=Path, required=True)
+            sub.add_argument('--workers', type=int, default=1)
+    return main
+
+
+def main(argv=None):
+    args = parser().parse_args(argv)
+    root = setup(args.root.resolve())
+    try:
+        config = Config(**{name: getattr(args, name) for name in Config.__dataclass_fields__}) if args.command in ('build', 'scan', 'scan-list') else None
+        if args.command == 'catalog':
+            from kepler_detector.catalog import get_catalog
+            print(f'{len(get_catalog(root, args.force))} KOI en {root / "data/koi_dr25.csv"}')
+        elif args.command == 'targets':
+            from kepler_detector.catalog import targets
+            print(f'{len(targets(root, args.limit, args.force))} objetivos')
+        elif args.command == 'build':
+            from kepler_detector.builder import build
+            print(build(root, config, args.per_class, args.force, args.retry_failed))
+        elif args.command == 'train':
+            from kepler_detector.ml import train
+            print(json.dumps(train(root, args.seed, args.test_size), indent=2))
+        elif args.command == 'evaluate':
+            from kepler_detector.ml import evaluate
+            print(json.dumps(evaluate(root), indent=2))
+        elif args.command == 'scan':
+            from kepler_detector.scanner import scan
+            print(scan(root, args.kic, config, args.force, args.no_model).to_string(index=False))
+        elif args.command == 'scan-list':
+            from kepler_detector.scanner import scan_list
+            scan_list(root, args.input, config, args.limit, args.workers, args.force, args.no_model, args.retry_failed)
+        return 0
+    except Exception as error:
+        logging.getLogger('kepler').debug('Error de comando', exc_info=True)
+        logging.getLogger('kepler').error('%s (detalles en logs/pipeline.log)', error)
+        return 1
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

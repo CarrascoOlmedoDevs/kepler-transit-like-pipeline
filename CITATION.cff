@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this software or its benchmark, please cite it."
+title: "Kepler Transit-Like Signal Pipeline"
+type: software
+authors:
+  - family-names: Carrasco
+    given-names: Javier
+repository-code: "https://github.com/CarrascoOlmedoDevs/kepler-transit-like-pipeline"
+license: Apache-2.0
+version: "2.0"
+date-released: 2026-09-21
+keywords:
+  - Kepler
+  - exoplanet
+  - transit-like signals
+  - box least squares
+  - random forest
+  - vetting
+  - benchmarking

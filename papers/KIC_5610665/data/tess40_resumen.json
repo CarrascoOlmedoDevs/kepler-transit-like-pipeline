@@ -1,0 +1,146 @@
+{
+  "centro_BTJD_TDB": 2401.495199513156,
+  "duracion_h": 13.4316,
+  "mascara_ajuste_h": 31.200000000000003,
+  "calidad_0": 3917,
+  "muestras_originales": 3927,
+  "posicion_pixel": [
+    3.428510812965629,
+    3.5879054337806453
+  ],
+  "pixeles_fondo": 11,
+  "resultados": [
+    {
+      "apertura": "central_2x2",
+      "pixeles": 4,
+      "semiventana_d": 2,
+      "grado": 1,
+      "profundidad_ppm": 623.0096332292281,
+      "dispersion_control_ppm": 590.8139160707052,
+      "numero_controles": 24,
+      "ruido_cadencia_ppm": 1463.4069841327648,
+      "n_dentro": 80
+    },
+    {
+      "apertura": "central_2x2",
+      "pixeles": 4,
+      "semiventana_d": 2,
+      "grado": 2,
+      "profundidad_ppm": 947.9407660086883,
+      "dispersion_control_ppm": 582.7729416725341,
+      "numero_controles": 24,
+      "ruido_cadencia_ppm": 1458.2201049255318,
+      "n_dentro": 80
+    },
+    {
+      "apertura": "central_2x2",
+      "pixeles": 4,
+      "semiventana_d": 3,
+      "grado": 1,
+      "profundidad_ppm": 516.0855879191032,
+      "dispersion_control_ppm": 973.863822425734,
+      "numero_controles": 18,
+      "ruido_cadencia_ppm": 1531.9663994801679,
+      "n_dentro": 80
+    },
+    {
+      "apertura": "central_2x2",
+      "pixeles": 4,
+      "semiventana_d": 3,
+      "grado": 2,
+      "profundidad_ppm": 726.6937060574616,
+      "dispersion_control_ppm": 901.257883573602,
+      "numero_controles": 18,
+      "ruido_cadencia_ppm": 1508.97958807604,
+      "n_dentro": 80
+    },
+    {
+      "apertura": "radio_1p5",
+      "pixeles": 6,
+      "semiventana_d": 2,
+      "grado": 1,
+      "profundidad_ppm": 415.7196818918102,
+      "dispersion_control_ppm": 605.474230084177,
+      "numero_controles": 24,
+      "ruido_cadencia_ppm": 1664.999965465614,
+      "n_dentro": 80
+    },
+    {
+      "apertura": "radio_1p5",
+      "pixeles": 6,
+      "semiventana_d": 2,
+      "grado": 2,
+      "profundidad_ppm": 1175.5471558821355,
+      "dispersion_control_ppm": 395.3027424252109,
+      "numero_controles": 24,
+      "ruido_cadencia_ppm": 1647.8101656830538,
+      "n_dentro": 80
+    },
+    {
+      "apertura": "radio_1p5",
+      "pixeles": 6,
+      "semiventana_d": 3,
+      "grado": 1,
+      "profundidad_ppm": -382.39139840178933,
+      "dispersion_control_ppm": 605.158981471835,
+      "numero_controles": 18,
+      "ruido_cadencia_ppm": 2075.78764690145,
+      "n_dentro": 80
+    },
+    {
+      "apertura": "radio_1p5",
+      "pixeles": 6,
+      "semiventana_d": 3,
+      "grado": 2,
+      "profundidad_ppm": 1257.6802675335605,
+      "dispersion_control_ppm": 814.3929220903333,
+      "numero_controles": 18,
+      "ruido_cadencia_ppm": 1710.6678436711836,
+      "n_dentro": 80
+    },
+    {
+      "apertura": "radio_2",
+      "pixeles": 12,
+      "semiventana_d": 2,
+      "grado": 1,
+      "profundidad_ppm": 507.0944245135489,
+      "dispersion_control_ppm": 317.7129358678478,
+      "numero_controles": 24,
+      "ruido_cadencia_ppm": 1735.0247506052558,
+      "n_dentro": 80
+    },
+    {
+      "apertura": "radio_2",
+      "pixeles": 12,
+      "semiventana_d": 2,
+      "grado": 2,
+      "profundidad_ppm": 1122.2875162281166,
+      "dispersion_control_ppm": 316.9202492751289,
+      "numero_controles": 24,
+      "ruido_cadencia_ppm": 1838.122552091735,
+      "n_dentro": 80
+    },
+    {
+      "apertura": "radio_2",
+      "pixeles": 12,
+      "semiventana_d": 3,
+      "grado": 1,
+      "profundidad_ppm": -240.93045910235784,
+      "dispersion_control_ppm": 555.2799079303827,
+      "numero_controles": 18,
+      "ruido_cadencia_ppm": 2223.9844091942364,
+      "n_dentro": 80
+    },
+    {
+      "apertura": "radio_2",
+      "pixeles": 12,
+      "semiventana_d": 3,
+      "grado": 2,
+      "profundidad_ppm": 1333.2456685907935,
+      "dispersion_control_ppm": 261.7804437542144,
+      "numero_controles": 18,
+      "ruido_cadencia_ppm": 1850.7941356871065,
+      "n_dentro": 80
+    }
+  ]
+}

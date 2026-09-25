@@ -1,0 +1,115 @@
+[
+  {
+    "filename": "kplr005610665-2013011073258_lpd-targ.fits.gz",
+    "sha256": "294144889935deb4a94c9a63505780d22b8367789ceed4d1f156c8bbd5a4843a",
+    "bytes": 3295943,
+    "quarter": 15,
+    "url": "https://archive.stsci.edu/pub/kepler/target_pixel_files/0056/005610665/kplr005610665-2013011073258_lpd-targ.fits.gz"
+  },
+  {
+    "filename": "kplr005610665-2012088054726_llc.fits",
+    "sha256": "532e80186da9b118359152ec45a4a3450c44199768244ec0a27977ca9c503899",
+    "bytes": 434880,
+    "quarter": 12,
+    "url": "https://archive.stsci.edu/pub/kepler/lightcurves/0056/005610665/kplr005610665-2012088054726_llc.fits"
+  },
+  {
+    "filename": "kplr005610665-2011271113734_lpd-targ.fits.gz",
+    "sha256": "b6b8d3f5024d110db01c54fbcc33c67cc93f894270f0b513862a290223ecdf8a",
+    "bytes": 2578596,
+    "quarter": 10,
+    "url": "https://archive.stsci.edu/pub/kepler/target_pixel_files/0056/005610665/kplr005610665-2011271113734_lpd-targ.fits.gz"
+  },
+  {
+    "filename": "kplr005610665-2012088054726_lpd-targ.fits.gz",
+    "sha256": "804194a24d773b7c6af574b20ffefd6673362f40e21120ed1dfec4bbde554dff",
+    "bytes": 2919923,
+    "quarter": 12,
+    "url": "https://archive.stsci.edu/pub/kepler/target_pixel_files/0056/005610665/kplr005610665-2012088054726_lpd-targ.fits.gz"
+  },
+  {
+    "filename": "kplr005610665-2010355172524_llc.fits",
+    "sha256": "a9408263ece44ad34ee01bbfdb8365105edb9e0b287a2a382898ca82ece66daf",
+    "bytes": 466560,
+    "quarter": 7,
+    "url": "https://archive.stsci.edu/pub/kepler/lightcurves/0056/005610665/kplr005610665-2010355172524_llc.fits"
+  },
+  {
+    "filename": "kplr005610665-2013098041711_lpd-targ.fits.gz",
+    "sha256": "0937546b7e962fa8efd5edb8f406f263b5ce483dedfe837dae02326a8e5147f9",
+    "bytes": 2634811,
+    "quarter": 16,
+    "url": "https://archive.stsci.edu/pub/kepler/target_pixel_files/0056/005610665/kplr005610665-2013098041711_lpd-targ.fits.gz"
+  },
+  {
+    "filename": "kplr005610665-2010355172524_lpd-targ.fits.gz",
+    "sha256": "fee03fd18d19ba0ffb4fcd1b319ad5b88a0f6c612eb54dcf68bb2656813f26f9",
+    "bytes": 3161901,
+    "quarter": 7,
+    "url": "https://archive.stsci.edu/pub/kepler/target_pixel_files/0056/005610665/kplr005610665-2010355172524_lpd-targ.fits.gz"
+  },
+  {
+    "filename": "kplr005610665-2012277125453_lpd-targ.fits.gz",
+    "sha256": "be0dc4c7b817ca08f85f20e1b3178a6688ab8b62aba1a2ced01143778a7c5280",
+    "bytes": 2532188,
+    "quarter": 14,
+    "url": "https://archive.stsci.edu/pub/kepler/target_pixel_files/0056/005610665/kplr005610665-2012277125453_lpd-targ.fits.gz"
+  },
+  {
+    "filename": "kplr005610665-2013098041711_llc.fits",
+    "sha256": "58e88bd5744f32489945986d1781aadc1617719f104eceab9afbc54700d1775d",
+    "bytes": 449280,
+    "quarter": 16,
+    "url": "https://archive.stsci.edu/pub/kepler/lightcurves/0056/005610665/kplr005610665-2013098041711_llc.fits"
+  },
+  {
+    "filename": "kplr005610665-2010174085026_lpd-targ.fits.gz",
+    "sha256": "68db05bc3e649c781b35e47146fc80b606068bb24c3afb0ba10200c39777fc05",
+    "bytes": 2859473,
+    "quarter": 5,
+    "url": "https://archive.stsci.edu/pub/kepler/target_pixel_files/0056/005610665/kplr005610665-2010174085026_lpd-targ.fits.gz"
+  },
+  {
+    "filename": "kplr005610665-2009350155506_llc.fits",
+    "sha256": "7a7b7db70d4bc1375a560e9a4f004ac84f3ea5b82f6609dd54fbb4cee01a1316",
+    "bytes": 466560,
+    "quarter": 3,
+    "url": "https://archive.stsci.edu/pub/kepler/lightcurves/0056/005610665/kplr005610665-2009350155506_llc.fits"
+  },
+  {
+    "filename": "kplr005610665-2011073133259_lpd-targ.fits.gz",
+    "sha256": "7040129aa6a20e075e05d26ad53d7fa3e454270db2b7d4658d26a39f59cee640",
+    "bytes": 2307421,
+    "quarter": 8,
+    "url": "https://archive.stsci.edu/pub/kepler/target_pixel_files/0056/005610665/kplr005610665-2011073133259_lpd-targ.fits.gz"
+  },
+  {
+    "filename": "kplr005610665-2012277125453_llc.fits",
+    "sha256": "d4faf67a388fdfa04ddc6cf38a6b1f4742a1991411e2c46dbe7d5bcd13d7e5fd",
+    "bytes": 506880,
+    "quarter": 14,
+    "url": "https://archive.stsci.edu/pub/kepler/lightcurves/0056/005610665/kplr005610665-2012277125453_llc.fits"
+  },
+  {
+    "filename": "kplr005610665-2011271113734_llc.fits",
+    "sha256": "8a34a534030511c742462760ae6e15b059b04d50d1dd5ee5f09a8d15a7ddb60a",
+    "bytes": 486720,
+    "quarter": 10,
+    "url": "https://archive.stsci.edu/pub/kepler/lightcurves/0056/005610665/kplr005610665-2011271113734_llc.fits"
+  },
+  {
+    "filename": "kplr005610665-2009350155506_lpd-targ.fits.gz",
+    "sha256": "3c53cafc5a742ba2854ba3392b60c48ceb6779d1aec36423fb0f8cd1fa6f3f8b",
+    "bytes": 3118938,
+    "quarter": 3,
+    "url": "https://archive.stsci.edu/pub/kepler/target_pixel_files/0056/005610665/kplr005610665-2009350155506_lpd-targ.fits.gz"
+  },
+  {
+    "filename": "KIC_5610665_TESS_sector40_7x7.fits",
+    "sha256": "f64390c6cd2d75c8638f71cc2d2269b91c39d4886222a3642c9a09eaa5928b11",
+    "bytes": 4150080,
+    "url": "https://mast.stsci.edu/tesscut/api/v0.1/astrocut?ra=288.910601&dec=40.800590&x=7&y=7&sector=40",
+    "format": "zip_with_fits",
+    "sector": 40
+  }
+]

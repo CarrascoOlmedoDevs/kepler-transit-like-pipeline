@@ -1,0 +1,33 @@
+{
+  "source": "user conversation; not independently verified catalog records",
+  "stellar_parameters": {
+    "teff_K": 6050,
+    "mass_solar": 0.984,
+    "radius_solar": 1.128,
+    "distance_pc": 332
+  },
+  "cnn_test_metrics": {
+    "n": 251,
+    "accuracy": 0.801,
+    "precision": 0.778,
+    "recall": 0.862,
+    "f1": 0.818,
+    "roc_auc": 0.836,
+    "average_precision": 0.791
+  },
+  "wise_excerpt": {
+    "ph_qual": "AAAU",
+    "moon_lev": "0000",
+    "w1nm": 47,
+    "w1m": 47,
+    "w2nm": 47,
+    "w2m": 47,
+    "w3nm": 21,
+    "w3m": 23,
+    "w4nm": 0,
+    "w4m": 23,
+    "dist_arcsec": 0.44156,
+    "angle_deg": 171.160165
+  },
+  "prior_benchmark_report": "24 known planets recovered, records unavailable"
+}

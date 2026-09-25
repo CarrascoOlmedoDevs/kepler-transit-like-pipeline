@@ -1,0 +1,166 @@
+{
+  "status": "complete",
+  "signature": "5c4e029e300bfb51444c5966057fdfcc91ec78a1b75030ff25fec78e229d1700",
+  "kic": 5610665,
+  "config": {
+    "period_min": 0.5,
+    "period_max": 300.0,
+    "durations": [
+      0.05,
+      0.1,
+      0.2,
+      0.3,
+      0.45
+    ],
+    "flatten_window": 5.0,
+    "sigma_clip": 7.0,
+    "coarse_points": 30000,
+    "refine_peaks": 12,
+    "max_planets": 5,
+    "min_snr": 7.1,
+    "min_transits": 2,
+    "match_tolerance": 0.01,
+    "seed": 42,
+    "quarter": null,
+    "save_curves": false
+  },
+  "source": {
+    "kic": 5610665,
+    "time_format": "BKJD",
+    "time_scale": "TDB",
+    "bjd_offset": 2454833.0,
+    "flux": "PDCSAP_FLUX",
+    "quality_bitmask": "default",
+    "products": [
+      {
+        "quarter": 0,
+        "filename": "kplr005610665-2009131105131_llc.fits",
+        "points": 469
+      },
+      {
+        "quarter": 1,
+        "filename": "kplr005610665-2009166043257_llc.fits",
+        "points": 1624
+      },
+      {
+        "quarter": 2,
+        "filename": "kplr005610665-2009259160929_llc.fits",
+        "points": 4070
+      },
+      {
+        "quarter": 3,
+        "filename": "kplr005610665-2009350155506_llc.fits",
+        "points": 4134
+      },
+      {
+        "quarter": 4,
+        "filename": "kplr005610665-2010078095331_llc.fits",
+        "points": 4108
+      },
+      {
+        "quarter": 5,
+        "filename": "kplr005610665-2010174085026_llc.fits",
+        "points": 4486
+      },
+      {
+        "quarter": 6,
+        "filename": "kplr005610665-2010265121752_llc.fits",
+        "points": 4272
+      },
+      {
+        "quarter": 7,
+        "filename": "kplr005610665-2010355172524_llc.fits",
+        "points": 4226
+      },
+      {
+        "quarter": 10,
+        "filename": "kplr005610665-2011271113734_llc.fits",
+        "points": 4441
+      },
+      {
+        "quarter": 8,
+        "filename": "kplr005610665-2011073133259_llc.fits",
+        "points": 3106
+      },
+      {
+        "quarter": 9,
+        "filename": "kplr005610665-2011177032512_llc.fits",
+        "points": 4609
+      },
+      {
+        "quarter": 11,
+        "filename": "kplr005610665-2012004120508_llc.fits",
+        "points": 4473
+      },
+      {
+        "quarter": 12,
+        "filename": "kplr005610665-2012088054726_llc.fits",
+        "points": 3550
+      },
+      {
+        "quarter": 13,
+        "filename": "kplr005610665-2012179063303_llc.fits",
+        "points": 4242
+      },
+      {
+        "quarter": 14,
+        "filename": "kplr005610665-2012277125453_llc.fits",
+        "points": 4269
+      },
+      {
+        "quarter": 16,
+        "filename": "kplr005610665-2013098041711_llc.fits",
+        "points": 3534
+      },
+      {
+        "quarter": 15,
+        "filename": "kplr005610665-2013011073258_llc.fits",
+        "points": 4366
+      },
+      {
+        "quarter": 17,
+        "filename": "kplr005610665-2013131215648_llc.fits",
+        "points": 1284
+      }
+    ],
+    "quarter_requested": null,
+    "preprocessing": {
+      "period_min": 0.5,
+      "period_max": 300.0,
+      "durations": [
+        0.05,
+        0.1,
+        0.2,
+        0.3,
+        0.45
+      ],
+      "flatten_window": 5.0,
+      "sigma_clip": 7.0,
+      "coarse_points": 30000,
+      "refine_peaks": 12,
+      "max_planets": 5,
+      "min_snr": 7.1,
+      "min_transits": 2,
+      "match_tolerance": 0.01,
+      "seed": 42,
+      "quarter": null,
+      "save_curves": false
+    }
+  },
+  "feature_version": "2.0",
+  "raw_detections": 5,
+  "candidate_families": 5,
+  "candidates": 5,
+  "duplicates_removed": 0,
+  "harmonic_detections": 0,
+  "duration_at_boundary": 4,
+  "stop_reason": "max_detections reached",
+  "seconds": 209.59399999998277,
+  "rf_available": true,
+  "mask_width_duration_range": [
+    1.5,
+    4.0
+  ],
+  "cnn_available": false,
+  "warning": "Candidatos de tránsito; no confirmación ni descubrimiento planetario"
+}

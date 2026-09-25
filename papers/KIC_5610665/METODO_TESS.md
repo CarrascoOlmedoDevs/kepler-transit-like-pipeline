@@ -7,7 +7,7 @@ Se ha extraído fotometría de apertura y sustraído un fondo local. Se han corr
 - Coordenadas: 288.910601°, +40.800590°.
 - 3927 cadencias originales; 3917 con QUALITY=0 y píxeles finitos.
 - 80 cadencias válidas dentro de la duración nominal de 13,4316 horas.
-- Centro supuesto: BTJD(TDB) 2401,495199513156. Obtenido de BKJD 260,54511369116005 + 20 × 215,39750429110552 días.
+- Centro supuesto: BTJD(TDB) 2401,4952. Obtenido de BKJD 260,54511369116005 + 20 × 215,39750429110552 días.
 - La conversión del centro a fecha civil es aproximada: BJD es un tiempo referido al baricentro; la etiqueta UTC no incluye una inversión geométrica precisa para TESS.
 
 ## Procedimiento

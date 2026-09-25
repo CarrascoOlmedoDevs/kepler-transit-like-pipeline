@@ -1,0 +1,90 @@
+{
+  "kind": "shuffled",
+  "seed": 49,
+  "quarter_segment_permutation": [
+    14,
+    1,
+    8,
+    5,
+    6,
+    16,
+    3,
+    7,
+    4,
+    17,
+    9,
+    2,
+    13,
+    0,
+    11,
+    12,
+    10,
+    15
+  ],
+  "config": {
+    "period_min": 0.5,
+    "period_max": 300.0,
+    "durations": [
+      0.05,
+      0.1,
+      0.2,
+      0.3,
+      0.45
+    ],
+    "flatten_window": 5.0,
+    "sigma_clip": 7.0,
+    "coarse_points": 30000,
+    "refine_peaks": 12,
+    "max_planets": 5,
+    "min_snr": 7.1,
+    "min_transits": 2,
+    "match_tolerance": 0.01,
+    "seed": 42,
+    "quarter": null,
+    "save_curves": false
+  },
+  "preprocessed_points": 65232,
+  "stop_reason": "below SNR/event threshold",
+  "seconds": 162.08901811800024,
+  "detections": [
+    {
+      "order": 1,
+      "period_days": 256.3508778983116,
+      "epoch_bkjd": 353.46293869131296,
+      "duration_hours": 22.183200000000003,
+      "depth_ppm": 68.08387248991022,
+      "snr": 10.275317858638182,
+      "transits": 5.0,
+      "boundary": true,
+      "mask_width": 1.5,
+      "max_event_contribution": 0.47311582936565577
+    },
+    {
+      "order": 2,
+      "period_days": 298.341345045914,
+      "epoch_bkjd": 211.56631369131287,
+      "duration_hours": 11.107199999999999,
+      "depth_ppm": 80.40185606772442,
+      "snr": 8.065868195088814,
+      "transits": 5.0,
+      "boundary": true,
+      "mask_width": 3.0,
+      "max_event_contribution": 0.584824943661182
+    },
+    {
+      "order": 3,
+      "period_days": 63.15825143442637,
+      "epoch_bkjd": 160.1045136913129,
+      "duration_hours": 23.415600000000005,
+      "depth_ppm": 25.963380490545696,
+      "snr": 9.677532844123945,
+      "transits": 22.0,
+      "boundary": true,
+      "mask_width": 3.0,
+      "max_event_contribution": 0.21941260165917625
+    }
+  ],
+  "max_snr_150_300": 10.275317858638182,
+  "threshold": 10.028094622665412,
+  "interpretation": "exploratory controls; quarter exchangeability unproven; not calibrated FAP; no ML applied"
+}

@@ -2,3 +2,5 @@ numpy==2.3.5
 scipy==1.17.0
 astropy==8.0.1
 matplotlib==3.10.8
+pandas==2.2.3
+lxml==6.1.1

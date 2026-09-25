@@ -1,0 +1,13 @@
+{
+  "utc": "2026-09-25T22:34:32.897358+00:00",
+  "url": "https://archive.stsci.edu/pub/kepler/catalogs/false_positive_list.csv.gz",
+  "archive_version": "June 2016, DR24 related; not current FPWG",
+  "rows": 599,
+  "matches": [],
+  "sha256": "386e1bb2cfa7143e1e12d063e02c413003b5e8ea6f272f3773728e876104f0d2",
+  "current_api_attempt": {
+    "url": "https://exoplanetarchive.ipac.caltech.edu/cgi-bin/nstedAPI/nph-nstedAPI?table=fpwg&where=kepid%3D5610665&format=csv",
+    "success": false,
+    "response": "ERROR<br>\nError Type: UserError - \"table\" parameter<br>\nMessage:    \"fpwg\" is not a valid table.\n"
+  }
+}

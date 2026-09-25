@@ -111,5 +111,89 @@
     "url": "https://mast.stsci.edu/tesscut/api/v0.1/astrocut?ra=288.910601&dec=40.800590&x=7&y=7&sector=40",
     "format": "zip_with_fits",
     "sector": 40
+  },
+  {
+    "filename": "kplr005610665-2009259160929_llc.fits",
+    "sha256": "2cb7b9b37a93e65582af3e00f8a206137411c574cd70cfde5113f9959fa4690f",
+    "bytes": 466560,
+    "quarter": 2,
+    "url": "https://archive.stsci.edu/pub/kepler/lightcurves/0056/005610665/kplr005610665-2009259160929_llc.fits"
+  },
+  {
+    "filename": "kplr005610665-2011177032512_llc.fits",
+    "sha256": "d52ffb32865cc476733f0853fcdad552b8adf83b18487a410267ad13acdb6d4b",
+    "bytes": 506880,
+    "quarter": 9,
+    "url": "https://archive.stsci.edu/pub/kepler/lightcurves/0056/005610665/kplr005610665-2011177032512_llc.fits"
+  },
+  {
+    "filename": "kplr005610665-2012004120508_llc.fits",
+    "sha256": "3a1ba069deb4bbc2d163349892a7e7b8d86af53be2a5c2f0e200b47e7817504b",
+    "bytes": 506880,
+    "quarter": 11,
+    "url": "https://archive.stsci.edu/pub/kepler/lightcurves/0056/005610665/kplr005610665-2012004120508_llc.fits"
+  },
+  {
+    "filename": "kplr005610665-2013131215648_llc.fits",
+    "sha256": "eb8f70d193b102bf281921845b71decf66b1ade1ae7f221b46047ce870dc9085",
+    "bytes": 187200,
+    "quarter": 17,
+    "url": "https://archive.stsci.edu/pub/kepler/lightcurves/0056/005610665/kplr005610665-2013131215648_llc.fits"
+  },
+  {
+    "filename": "kplr005610665-2009166043257_llc.fits",
+    "sha256": "36b257316518685bc5bef979c75fbe8c6ac9078b45cee5034c9c883bc959283d",
+    "bytes": 192960,
+    "quarter": 1,
+    "url": "https://archive.stsci.edu/pub/kepler/lightcurves/0056/005610665/kplr005610665-2009166043257_llc.fits"
+  },
+  {
+    "filename": "kplr005610665-2010265121752_llc.fits",
+    "sha256": "da1d503af43748236b3b9c435eaec55f0317fac30f36c7b948393595ecc1f9cd",
+    "bytes": 469440,
+    "quarter": 6,
+    "url": "https://archive.stsci.edu/pub/kepler/lightcurves/0056/005610665/kplr005610665-2010265121752_llc.fits"
+  },
+  {
+    "filename": "kplr005610665-2011073133259_llc.fits",
+    "sha256": "dd74874e153d472a441fa722bb5c835333de0f3331f6224ae967a38b1fb8451a",
+    "bytes": 357120,
+    "quarter": 8,
+    "url": "https://archive.stsci.edu/pub/kepler/lightcurves/0056/005610665/kplr005610665-2011073133259_llc.fits"
+  },
+  {
+    "filename": "kplr005610665-2012179063303_llc.fits",
+    "sha256": "d6873a4cdac3397a4d20e17ba76beeee35be696ae09d2a8b201506241423642b",
+    "bytes": 472320,
+    "quarter": 13,
+    "url": "https://archive.stsci.edu/pub/kepler/lightcurves/0056/005610665/kplr005610665-2012179063303_llc.fits"
+  },
+  {
+    "filename": "kplr005610665-2010078095331_llc.fits",
+    "sha256": "9e38fea986972feab951224e514c8f9e4a6bc2dcad48d42838b862ac71fecee4",
+    "bytes": 469440,
+    "quarter": 4,
+    "url": "https://archive.stsci.edu/pub/kepler/lightcurves/0056/005610665/kplr005610665-2010078095331_llc.fits"
+  },
+  {
+    "filename": "kplr005610665-2010174085026_llc.fits",
+    "sha256": "f1ddbbd262502c95f63cfdc329d49229474eacb29a0fcf23c594086f8e18ac3c",
+    "bytes": 492480,
+    "quarter": 5,
+    "url": "https://archive.stsci.edu/pub/kepler/lightcurves/0056/005610665/kplr005610665-2010174085026_llc.fits"
+  },
+  {
+    "filename": "kplr005610665-2009131105131_llc.fits",
+    "sha256": "46e62c9989b30186e0d1bf27081b9eba806673f863d41ff3bf9236e02c570095",
+    "bytes": 77760,
+    "quarter": 0,
+    "url": "https://archive.stsci.edu/pub/kepler/lightcurves/0056/005610665/kplr005610665-2009131105131_llc.fits"
+  },
+  {
+    "filename": "kplr005610665-2013011073258_llc.fits",
+    "sha256": "cdfdde774ee146466e561d5a8f167f6a25c1239d0707402b999e695fdd0b390c",
+    "bytes": 506880,
+    "quarter": 15,
+    "url": "https://archive.stsci.edu/pub/kepler/lightcurves/0056/005610665/kplr005610665-2013011073258_llc.fits"
   }
 ]

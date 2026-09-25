@@ -1,0 +1,16 @@
+{
+  "repository": "CarrascoOlmedoDevs/kepler-transit-like-pipeline",
+  "commit": "3a90e7dab7ace48633a5deda34b85d797225347e",
+  "files": {
+    "config.py": "11c9091be1b4a904500a60f651772e8bb8845d9b33337604c1a1a2c019779135",
+    "kepler_detector/__init__.py": "59994f47953850dada012a370d56a73645fd07ba27c3bddb6d52a5a67957e9e2",
+    "kepler_detector/bls.py": "635aa2fd3dc12b9d0cdd5e759252294f0a5076b29714ad5b94ab8adf43f16a5d",
+    "kepler_detector/features.py": "b5e68295dbcbb1b75bf8d4c279ce852702ecc8b0e42d6206b681a0247169d47c",
+    "kepler_detector/mast.py": "65964343f2dd6d2f7c17d4b57ac941ec4e5e2a183c2e30394407fcb112df78aa",
+    "kepler_detector/preprocessing.py": "a3c43fb1e17c1375abd486a807b3ee47c7db51c0ed5a417f8c0534a1207cc48f",
+    "kepler_detector/schema.py": "62c4566214b435cfb47034465f9aad37626487eae59a767bfcee3730e9ecd23a",
+    "kepler_detector/utils.py": "9c93bf06bea25959763fd6806aa7d97acc204b7e07359c4b314b3443ed68213b",
+    "kepler_detector/vetting.py": "17c80bdd634263c919e91782be0aa7f839e95b27ae3fb50ed05f477742575477"
+  },
+  "masking_snapshot": "scripts/scanner_masking_snapshot.py contains exact _local_bls_power and adaptive_mask from scanner.py at this commit"
+}

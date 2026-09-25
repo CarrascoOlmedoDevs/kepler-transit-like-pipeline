@@ -1,0 +1,45 @@
+[
+  {
+    "name": "all",
+    "dropped_cycles": [],
+    "depth_ppm": 75.17032342785335,
+    "snr": 10.02809462263579,
+    "n_inside": 122.0,
+    "uncertainty_ppm": 7.495972690382886
+  },
+  {
+    "name": "without_cycles_0_2",
+    "dropped_cycles": [
+      0,
+      2
+    ],
+    "depth_ppm": 55.62455604191108,
+    "snr": 5.563775713184421,
+    "n_inside": 70.0,
+    "uncertainty_ppm": 9.997627314504815
+  },
+  {
+    "name": "without_partial_cycles_3_4",
+    "dropped_cycles": [
+      3,
+      4
+    ],
+    "depth_ppm": 82.67228250768977,
+    "snr": 10.770548296449782,
+    "n_inside": 106.0,
+    "uncertainty_ppm": 7.6757728791709186
+  },
+  {
+    "name": "only_cycles_0_2_drop_other_event_windows",
+    "dropped_cycles": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "depth_ppm": 101.66584377058197,
+    "snr": 9.662185549348893,
+    "n_inside": 52.0,
+    "uncertainty_ppm": 10.522033886777608
+  }
+]

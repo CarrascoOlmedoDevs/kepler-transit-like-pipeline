@@ -1,0 +1,90 @@
+{
+  "kind": "shuffled",
+  "seed": 42,
+  "quarter_segment_permutation": [
+    15,
+    17,
+    12,
+    6,
+    8,
+    10,
+    7,
+    3,
+    0,
+    14,
+    5,
+    11,
+    2,
+    4,
+    16,
+    1,
+    13,
+    9
+  ],
+  "config": {
+    "period_min": 0.5,
+    "period_max": 300.0,
+    "durations": [
+      0.05,
+      0.1,
+      0.2,
+      0.3,
+      0.45
+    ],
+    "flatten_window": 5.0,
+    "sigma_clip": 7.0,
+    "coarse_points": 30000,
+    "refine_peaks": 12,
+    "max_planets": 5,
+    "min_snr": 7.1,
+    "min_transits": 2,
+    "match_tolerance": 0.01,
+    "seed": 42,
+    "quarter": null,
+    "save_curves": false
+  },
+  "preprocessed_points": 65232,
+  "stop_reason": "below SNR/event threshold",
+  "seconds": 192.60916903799807,
+  "detections": [
+    {
+      "order": 1,
+      "period_days": 283.19318970293193,
+      "epoch_bkjd": 388.51808869131287,
+      "duration_hours": 9.36,
+      "depth_ppm": 93.70233429573105,
+      "snr": 7.754122959391412,
+      "transits": 5.0,
+      "boundary": false,
+      "mask_width": 1.5,
+      "max_event_contribution": 0.6313201843337165
+    },
+    {
+      "order": 2,
+      "period_days": 282.24909065941813,
+      "epoch_bkjd": 300.2386636913129,
+      "duration_hours": 23.415600000000005,
+      "depth_ppm": 59.40970707674076,
+      "snr": 10.062487336957146,
+      "transits": 5.0,
+      "boundary": true,
+      "mask_width": 4.0,
+      "max_event_contribution": 0.6139408169114456
+    },
+    {
+      "order": 3,
+      "period_days": 227.3609553644956,
+      "epoch_bkjd": 208.75863869131288,
+      "duration_hours": 19.718400000000003,
+      "depth_ppm": 51.435366556162876,
+      "snr": 10.43874476354494,
+      "transits": 7.0,
+      "boundary": true,
+      "mask_width": 1.5,
+      "max_event_contribution": 0.37325199726315156
+    }
+  ],
+  "max_snr_150_300": 10.43874476354494,
+  "threshold": 10.028094622665412,
+  "interpretation": "exploratory controls; quarter exchangeability unproven; not calibrated FAP; no ML applied"
+}

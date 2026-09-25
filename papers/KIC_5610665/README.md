@@ -1,43 +1,44 @@
-# KIC 5610665 — dossier de investigación
+# KIC 5610665 — artículo y análisis reproducible
 
-**Javier Carrasco (Saka)** · Sakanet  
-[Borrador del artículo](PAPER.md)
+**Javier Carrasco (Saka)** · Sakanet
 
-Estado: señal sin confirmar. Los scores RF/CNN no son probabilidades de planeta.
+- [Artículo revisado](PAPER.md): Kepler, eventos individuales, controles y discusión.
+- [Respuesta a la revisión](REVIEW_RESPONSE.md).
+- [Apéndice TESS](APENDICE_TESS.md): métodos, doce configuraciones y figuras.
+- [Verificación](VERIFICATION.md).
 
-## Contenido
+## Datos
 
-- `PAPER.md`: manuscrito, resultados completos, discusión y referencias.
-- `data/candidates_original.csv`, `detections_original.csv`: exportaciones originales, sin modificación.
-- `data/metadata_sanitized.json`: metadatos con prefijos de rutas de Windows eliminados; se conservan nombres de archivo y valores científicos.
-- `data/cnn_reported.csv`: evaluación CNN posterior comunicada en texto, independiente del CSV original sin CNN.
-- `data/tess40_*`: curva extraída, las doce configuraciones y resumen numérico.
-- `data/2mass_original.tbl`, `irsa_findercharts.zip`: productos IRSA suministrados; no son series de tránsito.
-- `data/download_manifest.json`: 16 productos originales Kepler/TESS consultados, URLs, tamaños y SHA256. Incluye también trimestres descargados durante la exploración que no entran en la figura final.
-- `figures/`: imágenes de Kepler dentro/fuera de ventanas y diagnóstico TESS.
-- `scripts/`: reproducción del análisis TESS, la comparación Kepler y descargas verificadas.
-- `requirements.txt`: versiones del entorno de esta reproducción.
-- `CHECKSUMS.sha256`: integridad de los archivos incluidos.
+`data/candidates_original.csv` y `detections_original.csv` son las exportaciones originales intactas. `metadata_sanitized.json` conserva valores científicos y nombres FITS, eliminando prefijos de rutas de Windows. La CNN posterior se guarda separadamente en `cnn_reported.csv`, pues no figura en el CSV original.
 
-Los FITS originales se obtienen del archivo mediante el manifiesto, siguiendo la política de este repositorio. Las observaciones completas de la búsqueda Kepler, pesos RF/CNN, catálogos congelados, CSV actualizado con CNN y las cinco figuras plegadas originales no están disponibles en este dossier. No se presenta una reproducción completa del descubrimiento. Las simulaciones visuales de órbitas no forman parte de la evidencia.
+`data/kepler_review` contiene cobertura, banderas de rolling band, muestras de eventos, auditoría de reproducción de medidas, comparación de efemérides, pruebas por subconjuntos y duración física. `data/null_controls` conserva las diez búsquedas (nominal, inversión y ocho reordenaciones), semillas, órdenes, configuración, criterios de parada y detecciones.
 
-## Reproducir
+`data/catalog_checks` conserva consultas, respuestas, fechas y hashes. Las tablas actuales KOI/TCE/nombres Kepler no contienen filas para este KIC. La copia FPWG es de **2016**: no debe interpretarse como una consulta actual. También se conservan la lista TESScut y la comparación de fechas sectoriales con efemérides.
 
-Desde esta carpeta, con Python y acceso a MAST:
+`data/download_manifest.json` referencia **28 productos**: las 18 curvas Kepler, nueve TPF consultados y el recorte TESS sector 40. Los FITS se obtienen del archivo astronómico; los productos derivados pequeños se incluyen. `data/source_snapshot.json` identifica el código científico de referencia. `CHECKSUMS.sha256` verifica archivos incluidos.
 
-```bash
-python -m pip install -r requirements.txt
-python scripts/download_data.py raw
-python scripts/analizar_tess40.py raw/KIC_5610665_TESS_sector40_7x7.fits reproduced/tess40
-python scripts/kepler_pixels.py raw reproduced/kepler_pixels.png
-```
+Los registros de clasificación posteriores comunicados y parámetros estelares inicialmente citados se conservan como antecedentes en `reported_context.json`; para parámetros verificados se debe usar `catalog_checks/stellar.csv`. Las miniaturas IRSA son imágenes de contexto, no series de tránsito. No se incluyen simulaciones de órbitas como evidencia.
 
-El primer análisis crea `reproduced/tess40` y, por ello, su directorio padre. Si se ejecuta solo la figura Kepler, crear previamente `reproduced`. Las descargas usan la biblioteca estándar y no necesitan credenciales. TESScut puede regenerar encabezados: ante un hash diferente el descargador conserva el archivo como `.changed` y se detiene, sin sustituir silenciosamente la referencia.
+## Reproducción
 
-Se volvió a ejecutar el análisis TESS con el FITS disponible y se comparó el resumen numérico con el original. Ver `VERIFICATION.md`. No se ha vuelto a ejecutar el escáner ni su entrenamiento. La figura Kepler nueva elimina la cruz aproximada de una versión anterior; no incluye un centroide astrométrico.
+Clonar este repositorio y situarse en `papers/KIC_5610665`. Instalar las versiones de `requirements.txt`. Los scripts de Kepler importan los módulos del repositorio; la referencia exacta se registra en `data/source_snapshot.json`.
 
-## Procedencia y límites
+Ejecutar por orden:
 
-El artículo separa resultados exportados, cifras comunicadas y medidas reproducidas. Las capturas de interfaz, enlaces a localhost, transcripciones repetidas y miniaturas duplicadas no sustituyen los datos científicos. Se conserva un solo archivo IRSA. No se afirma haber confirmado la ausencia de una entrada en todos los catálogos ni haber descartado contaminación.
+1. `python scripts/download_data.py raw`
+2. `python scripts/review_kepler.py raw reproduced/kepler`
+3. `python scripts/supplementary_checks.py reproduced/kepler`
+4. `python scripts/null_controls.py raw reproduced/null_controls 8`
+5. `python scripts/vet_null_controls.py raw reproduced/null_controls reproduced/null_vetting.json`
+6. `python scripts/analizar_tess40.py raw/KIC_5610665_TESS_sector40_7x7.fits reproduced/tess40`
+7. `python scripts/kepler_pixels.py raw reproduced/kepler_pixels.png`
 
-Código sujeto a la licencia del repositorio; datos de archivo sujetos a las condiciones de sus proveedores. La atribución de autoría no implica aprobación editorial definitiva del borrador.
+El control utiliza dos procesos y puede tardar varios minutos por realización. No modifica el escáner ni los archivos originales. La reordenación preserva estructura dentro de trimestre, pero altera estaciones y ventana global: sus frecuencias no son probabilidades calibradas. No se aportan los pesos RF/CNN ni se reproduce su inferencia.
+
+`query_catalogs.py` repite las cuatro consultas TAP y sobrescribe sus respuestas/fechas: para conservar esta entrega, ejecutarlo en una copia. El descargador comprueba hashes; TESScut puede regenerar encabezados, por lo que un cambio se conserva como `.changed` y requiere inspección.
+
+Los NPZ completos se generan durante la reproducción y no se versionan. Las dos figuras Kepler nuevas se generan a partir de los datos reconstruidos y cajas exportadas, sin presentar un nuevo ajuste planetario. El script `supplementary_checks.py` escribe sus resúmenes en `data/kepler_review`.
+
+Código sujeto a la licencia del repositorio; observaciones y catálogos sujetos a las condiciones de los proveedores. Estado científico: señal sin confirmar.
+
+La captura comprimida `data/catalog_checks/tess_sector_dates.html.gz` conserva las fechas utilizadas. Tras descomprimirla, `audit_sector_dates.py` reproduce la comparación sectorial. Las cadencias de otros sectores no fueron descargadas.

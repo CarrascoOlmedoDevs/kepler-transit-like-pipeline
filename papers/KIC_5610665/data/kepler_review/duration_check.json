@@ -1,0 +1,8 @@
+{
+  "source": "catalog_checks/stellar.csv: q1_q17_dr25_stellar",
+  "mass_solar": 0.984,
+  "radius_solar": 1.128,
+  "central_circular_small_planet_duration_hours": 12.341045081232584,
+  "observed_box_duration_hours": 13.4316,
+  "assumptions": "circular orbit, central transit, negligible planet radius; no covariance or uncertainty propagation; BLS box duration is not a fitted contact duration"
+}

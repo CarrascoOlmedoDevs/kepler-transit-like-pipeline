@@ -1,0 +1,135 @@
+{
+  "raw_points": 65263,
+  "preprocessed_points": 65232,
+  "audit": [
+    {
+      "order": 1,
+      "period": 213.08678619053012,
+      "original_points": 65232,
+      "reconstructed_points": 65232,
+      "original_depth_ppm": 61.02266600838124,
+      "reconstructed_depth_ppm": 61.02266600882533,
+      "original_snr": 10.209137377494205,
+      "reconstructed_snr": 10.209137377568501,
+      "consistency": {
+        "individual_transit_depths": "[114.084115,178.408047,31.515319,79.190449,15.404152,43.334153,-3.850087]",
+        "individual_transit_snr": "[9.222368,12.599083,2.613829,6.567927,1.277595,3.409628,-0.31932]",
+        "median_transit_depth": 43.334153285945476,
+        "transit_depth_mad": 35.85629555058479,
+        "transit_depth_consistency": 0.4690409071434337,
+        "quarters_with_transits": "[2,4,6,10,11,13,16]",
+        "number_of_independent_quarters": 7,
+        "max_single_transit_contribution": 0.517030400609761,
+        "jackknife_min_snr_fraction": 0.6949601423033115
+      }
+    },
+    {
+      "order": 2,
+      "period": 273.9078439051942,
+      "original_points": 64849,
+      "reconstructed_points": 64849,
+      "original_depth_ppm": 63.18827816431671,
+      "reconstructed_depth_ppm": 63.1882781647608,
+      "original_snr": 10.2760647193956,
+      "reconstructed_snr": 10.27606471946782,
+      "consistency": {
+        "individual_transit_depths": "[148.191774,112.142799,23.319529,18.716959,83.687033]",
+        "individual_transit_snr": "[13.203135,9.432729,2.054944,1.64936,7.3746]",
+        "median_transit_depth": 83.68703267314092,
+        "transit_depth_mad": 60.36750389659672,
+        "transit_depth_consistency": 0.5809399319585297,
+        "quarters_with_transits": "[3,6,10,12,16]",
+        "number_of_independent_quarters": 5,
+        "max_single_transit_contribution": 0.5369939544359555,
+        "jackknife_min_snr_fraction": 0.6804454758201017
+      }
+    },
+    {
+      "order": 3,
+      "period": 264.9308837805129,
+      "original_points": 64031,
+      "reconstructed_points": 64031,
+      "original_depth_ppm": 62.561718635056884,
+      "reconstructed_depth_ppm": 62.561718635056884,
+      "original_snr": 8.065413405548698,
+      "reconstructed_snr": 8.065413405548698,
+      "consistency": {
+        "individual_transit_depths": "[94.07417,15.807359,58.872364,73.041776,96.254817]",
+        "individual_transit_snr": "[7.533102,1.265793,4.714275,5.848908,7.811184]",
+        "median_transit_depth": 73.04177631894947,
+        "transit_depth_mad": 21.032393849096394,
+        "transit_depth_consistency": 0.7764275378509748,
+        "quarters_with_transits": "[3,6,10,12,16]",
+        "number_of_independent_quarters": 5,
+        "max_single_transit_contribution": 0.34707105564593455,
+        "jackknife_min_snr_fraction": 0.8080401873385169
+      }
+    },
+    {
+      "order": 4,
+      "period": 157.6738134871411,
+      "original_points": 63762,
+      "reconstructed_points": 63762,
+      "original_depth_ppm": 43.18733061425828,
+      "reconstructed_depth_ppm": 43.187330614480324,
+      "original_snr": 10.21690913557773,
+      "reconstructed_snr": 10.21690913563026,
+      "consistency": {
+        "individual_transit_depths": "[61.605665,34.06097,-13.003442,20.139344,25.440943,15.102627,133.066477,65.327966,32.98122]",
+        "individual_transit_snr": "[5.3807,3.008535,-1.135734,1.778867,2.222037,1.333984,11.753486,5.770284,2.84769]",
+        "median_transit_depth": 32.98121953598798,
+        "transit_depth_mad": 17.878592845188557,
+        "transit_depth_consistency": 0.576420521724046,
+        "quarters_with_transits": "[2,4,5,7,8,10,12,14,16]",
+        "number_of_independent_quarters": 9,
+        "max_single_transit_contribution": 0.6074031897224554,
+        "jackknife_min_snr_fraction": 0.6265754625562229
+      }
+    },
+    {
+      "order": 5,
+      "period": 215.39750429110552,
+      "original_points": 63181,
+      "reconstructed_points": 63181,
+      "original_depth_ppm": 75.17032342807539,
+      "reconstructed_depth_ppm": 75.17032342785335,
+      "original_snr": 10.028094622665412,
+      "reconstructed_snr": 10.02809462263579,
+      "consistency": {
+        "individual_transit_depths": "[90.408076,79.893918,-51.369077,75.438538,25.343672,55.286758]",
+        "individual_transit_snr": "[6.303969,5.157594,-1.914585,2.811681,1.735319,3.785566]",
+        "median_transit_depth": 65.3626478395175,
+        "transit_depth_mad": 19.788349592875235,
+        "transit_depth_consistency": 0.6396739303358663,
+        "quarters_with_transits": "[3,7,8,12,14,15]",
+        "number_of_independent_quarters": 6,
+        "max_single_transit_contribution": 0.43389898665946586,
+        "jackknife_min_snr_fraction": 0.7523968456476504
+      }
+    }
+  ],
+  "overlap": {
+    "relative_period_difference_percent": 1.0727692078792657,
+    "primary_shared_cadences": 0,
+    "secondary_shared_cadences": 0,
+    "masked_by_first_at_recorded_width": 0,
+    "centers_nearest_primary_days": [
+      90.40167499999995,
+      92.71239310057535,
+      95.02311120115075,
+      97.33382930172615,
+      99.64454740230155,
+      101.95526550287707,
+      104.26598360345213
+    ],
+    "centers_nearest_secondary_days": [
+      16.141718095265105,
+      13.830999994689705,
+      11.520281894114305,
+      9.209563793538905,
+      6.898845692963391,
+      4.5881275923878775,
+      2.2774094918128185
+    ]
+  }
+}

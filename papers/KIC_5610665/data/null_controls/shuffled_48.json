@@ -1,0 +1,78 @@
+{
+  "kind": "shuffled",
+  "seed": 48,
+  "quarter_segment_permutation": [
+    15,
+    3,
+    13,
+    8,
+    1,
+    16,
+    5,
+    6,
+    2,
+    4,
+    11,
+    12,
+    9,
+    10,
+    14,
+    7,
+    17,
+    0
+  ],
+  "config": {
+    "period_min": 0.5,
+    "period_max": 300.0,
+    "durations": [
+      0.05,
+      0.1,
+      0.2,
+      0.3,
+      0.45
+    ],
+    "flatten_window": 5.0,
+    "sigma_clip": 7.0,
+    "coarse_points": 30000,
+    "refine_peaks": 12,
+    "max_planets": 5,
+    "min_snr": 7.1,
+    "min_transits": 2,
+    "match_tolerance": 0.01,
+    "seed": 42,
+    "quarter": null,
+    "save_curves": false
+  },
+  "preprocessed_points": 65232,
+  "stop_reason": "below SNR/event threshold",
+  "seconds": 132.50109063000127,
+  "detections": [
+    {
+      "order": 1,
+      "period_days": 240.2264404400093,
+      "epoch_bkjd": 229.8121386913129,
+      "duration_hours": 22.183200000000003,
+      "depth_ppm": 60.83472762286046,
+      "snr": 10.58139853219511,
+      "transits": 6.0,
+      "boundary": true,
+      "mask_width": 4.0,
+      "max_event_contribution": 0.5431064049658731
+    },
+    {
+      "order": 2,
+      "period_days": 192.93513108599478,
+      "epoch_bkjd": 200.40938869131287,
+      "duration_hours": 10.2336,
+      "depth_ppm": 79.60607200685476,
+      "snr": 8.74069933989809,
+      "transits": 6.0,
+      "boundary": false,
+      "mask_width": 4.0,
+      "max_event_contribution": 0.5911657821561541
+    }
+  ],
+  "max_snr_150_300": 10.58139853219511,
+  "threshold": 10.028094622665412,
+  "interpretation": "exploratory controls; quarter exchangeability unproven; not calibrated FAP; no ML applied"
+}

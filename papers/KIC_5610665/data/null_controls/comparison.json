@@ -1,0 +1,89 @@
+{
+  "threshold": 10.028094622665412,
+  "n_shuffles": 8,
+  "shuffles_exceeding_snr": 5,
+  "shuffles_exceeding_snr_without_flags": 0,
+  "rows": [
+    {
+      "kind": "nominal",
+      "seed": 42,
+      "accepted_all_periods": 5,
+      "max_snr_150_300": 10.27606471946782,
+      "high_snr_count": 4,
+      "high_snr_without_flags": 1
+    },
+    {
+      "kind": "inverted",
+      "seed": 42,
+      "accepted_all_periods": 0,
+      "max_snr_150_300": null,
+      "high_snr_count": 0,
+      "high_snr_without_flags": 0
+    },
+    {
+      "kind": "shuffled",
+      "seed": 42,
+      "accepted_all_periods": 3,
+      "max_snr_150_300": 10.43874476354494,
+      "high_snr_count": 2,
+      "high_snr_without_flags": 0
+    },
+    {
+      "kind": "shuffled",
+      "seed": 43,
+      "accepted_all_periods": 4,
+      "max_snr_150_300": 11.42230833041652,
+      "high_snr_count": 3,
+      "high_snr_without_flags": 0
+    },
+    {
+      "kind": "shuffled",
+      "seed": 44,
+      "accepted_all_periods": 2,
+      "max_snr_150_300": 11.548336717444581,
+      "high_snr_count": 1,
+      "high_snr_without_flags": 0
+    },
+    {
+      "kind": "shuffled",
+      "seed": 45,
+      "accepted_all_periods": 4,
+      "max_snr_150_300": 9.450483158075539,
+      "high_snr_count": 0,
+      "high_snr_without_flags": 0
+    },
+    {
+      "kind": "shuffled",
+      "seed": 46,
+      "accepted_all_periods": 0,
+      "max_snr_150_300": null,
+      "high_snr_count": 0,
+      "high_snr_without_flags": 0
+    },
+    {
+      "kind": "shuffled",
+      "seed": 47,
+      "accepted_all_periods": 4,
+      "max_snr_150_300": 9.119943770877724,
+      "high_snr_count": 0,
+      "high_snr_without_flags": 0
+    },
+    {
+      "kind": "shuffled",
+      "seed": 48,
+      "accepted_all_periods": 2,
+      "max_snr_150_300": 10.58139853219511,
+      "high_snr_count": 1,
+      "high_snr_without_flags": 0
+    },
+    {
+      "kind": "shuffled",
+      "seed": 49,
+      "accepted_all_periods": 3,
+      "max_snr_150_300": 10.275317858638182,
+      "high_snr_count": 1,
+      "high_snr_without_flags": 0
+    }
+  ],
+  "warning": "Exploratory frequency, not calibrated FAP. Additional vetting comparison post hoc; no ML weights."
+}

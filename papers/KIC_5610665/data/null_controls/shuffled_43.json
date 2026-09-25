@@ -1,0 +1,102 @@
+{
+  "kind": "shuffled",
+  "seed": 43,
+  "quarter_segment_permutation": [
+    8,
+    11,
+    16,
+    2,
+    15,
+    17,
+    9,
+    7,
+    12,
+    13,
+    1,
+    5,
+    14,
+    10,
+    4,
+    6,
+    0,
+    3
+  ],
+  "config": {
+    "period_min": 0.5,
+    "period_max": 300.0,
+    "durations": [
+      0.05,
+      0.1,
+      0.2,
+      0.3,
+      0.45
+    ],
+    "flatten_window": 5.0,
+    "sigma_clip": 7.0,
+    "coarse_points": 30000,
+    "refine_peaks": 12,
+    "max_planets": 5,
+    "min_snr": 7.1,
+    "min_transits": 2,
+    "match_tolerance": 0.01,
+    "seed": 42,
+    "quarter": null,
+    "save_curves": false
+  },
+  "preprocessed_points": 65232,
+  "stop_reason": "below SNR/event threshold",
+  "seconds": 207.98111004199745,
+  "detections": [
+    {
+      "order": 1,
+      "period_days": 287.3392563132652,
+      "epoch_bkjd": 310.54408869131294,
+      "duration_hours": 7.956,
+      "depth_ppm": 115.77755617664387,
+      "snr": 9.430874452288151,
+      "transits": 4.0,
+      "boundary": false,
+      "mask_width": 1.5,
+      "max_event_contribution": 0.6445108279583629
+    },
+    {
+      "order": 2,
+      "period_days": 286.4161523952925,
+      "epoch_bkjd": 130.4810886913129,
+      "duration_hours": 18.564,
+      "depth_ppm": 58.428330641513426,
+      "snr": 10.078668986376519,
+      "transits": 6.0,
+      "boundary": true,
+      "mask_width": 1.5,
+      "max_event_contribution": 0.46354901300600176
+    },
+    {
+      "order": 3,
+      "period_days": 240.57605127228888,
+      "epoch_bkjd": 135.7646136913129,
+      "duration_hours": 23.415600000000005,
+      "depth_ppm": 51.65744400736916,
+      "snr": 10.40577442387168,
+      "transits": 7.0,
+      "boundary": true,
+      "mask_width": 4.0,
+      "max_event_contribution": 0.5129969265523523
+    },
+    {
+      "order": 4,
+      "period_days": 221.97637317041188,
+      "epoch_bkjd": 287.1444136913129,
+      "duration_hours": 23.415600000000005,
+      "depth_ppm": 57.99506634551754,
+      "snr": 11.42230833041652,
+      "transits": 6.0,
+      "boundary": true,
+      "mask_width": 2.0,
+      "max_event_contribution": 0.648164360605263
+    }
+  ],
+  "max_snr_150_300": 11.42230833041652,
+  "threshold": 10.028094622665412,
+  "interpretation": "exploratory controls; quarter exchangeability unproven; not calibrated FAP; no ML applied"
+}

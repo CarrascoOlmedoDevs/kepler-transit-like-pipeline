@@ -1,0 +1,95 @@
+{
+  "kind": "nominal",
+  "seed": 42,
+  "quarter_segment_permutation": [],
+  "config": {
+    "period_min": 0.5,
+    "period_max": 300.0,
+    "durations": [
+      0.05,
+      0.1,
+      0.2,
+      0.3,
+      0.45
+    ],
+    "flatten_window": 5.0,
+    "sigma_clip": 7.0,
+    "coarse_points": 30000,
+    "refine_peaks": 12,
+    "max_planets": 5,
+    "min_snr": 7.1,
+    "min_transits": 2,
+    "match_tolerance": 0.01,
+    "seed": 42,
+    "quarter": null,
+    "save_curves": false
+  },
+  "preprocessed_points": 65232,
+  "stop_reason": "max_detections reached",
+  "seconds": 206.16116674399746,
+  "detections": [
+    {
+      "order": 1,
+      "period_days": 213.08678619053012,
+      "epoch_bkjd": 170.1434386913129,
+      "duration_hours": 19.718400000000003,
+      "depth_ppm": 61.02266600882533,
+      "snr": 10.209137377568501,
+      "transits": 7.0,
+      "boundary": true,
+      "mask_width": 1.5,
+      "max_event_contribution": 0.517030400609761
+    },
+    {
+      "order": 2,
+      "period_days": 273.9078439051942,
+      "epoch_bkjd": 325.6825886913129,
+      "duration_hours": 22.183200000000003,
+      "depth_ppm": 63.1882781647608,
+      "snr": 10.27606471946782,
+      "transits": 5.0,
+      "boundary": true,
+      "mask_width": 4.0,
+      "max_event_contribution": 0.5369939544359555
+    },
+    {
+      "order": 3,
+      "period_days": 264.9308837805129,
+      "epoch_bkjd": 321.08676369131285,
+      "duration_hours": 18.486000000000004,
+      "depth_ppm": 62.561718635056884,
+      "snr": 8.065413405548698,
+      "transits": 5.0,
+      "boundary": true,
+      "mask_width": 1.5,
+      "max_event_contribution": 0.34707105564593455
+    },
+    {
+      "order": 4,
+      "period_days": 157.6738134871411,
+      "epoch_bkjd": 209.3234886913129,
+      "duration_hours": 22.183200000000003,
+      "depth_ppm": 43.187330614480324,
+      "snr": 10.21690913563026,
+      "transits": 9.0,
+      "boundary": true,
+      "mask_width": 1.5,
+      "max_event_contribution": 0.6074031897224554
+    },
+    {
+      "order": 5,
+      "period_days": 215.39750429110552,
+      "epoch_bkjd": 260.54511369131285,
+      "duration_hours": 13.4316,
+      "depth_ppm": 75.17032342785335,
+      "snr": 10.02809462263579,
+      "transits": 6.0,
+      "boundary": false,
+      "mask_width": 1.5,
+      "max_event_contribution": 0.43389898665946586
+    }
+  ],
+  "max_snr_150_300": 10.27606471946782,
+  "threshold": 10.028094622665412,
+  "interpretation": "exploratory controls; quarter exchangeability unproven; not calibrated FAP; no ML applied"
+}

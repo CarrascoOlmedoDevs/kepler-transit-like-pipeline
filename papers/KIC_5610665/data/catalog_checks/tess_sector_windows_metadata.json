@@ -1,0 +1,6 @@
+{
+  "utc": "2026-09-25T22:34:56.906888+00:00",
+  "sectors_url": "https://mast.stsci.edu/tesscut/api/v0.1/sector?ra=288.910601&dec=40.800590",
+  "dates_url": "https://heasarc.gsfc.nasa.gov/docs/tess/sector.html",
+  "method": "Nearest predicted cycle vs sector calendar dates; not per-cadence coverage. UTC to TDB; barycentric light-time of sector dates omitted. No ephemeris uncertainty."
+}

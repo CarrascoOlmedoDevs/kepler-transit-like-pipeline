@@ -1,0 +1,42 @@
+[
+  {
+    "name": "cumulative",
+    "utc": "2026-09-25T22:26:53.480132+00:00",
+    "query": "select * from cumulative where kepid=5610665",
+    "url": "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=select+%2A+from+cumulative+where+kepid%3D5610665&format=csv",
+    "success": true,
+    "rows": 0,
+    "sha256": "5de2dd40509de2cf4d9dbd11f08b6709b92252251230c47c384233084449fad4",
+    "error": ""
+  },
+  {
+    "name": "tce_dr25",
+    "utc": "2026-09-25T22:27:02.051123+00:00",
+    "query": "select * from q1_q17_dr25_tce where kepid=5610665",
+    "url": "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=select+%2A+from+q1_q17_dr25_tce+where+kepid%3D5610665&format=csv",
+    "success": true,
+    "rows": 0,
+    "sha256": "ed1d6952fb50da5cc9e5cd78c7eca0b44d6aaef613c1f18aee2a1953e8674d15",
+    "error": ""
+  },
+  {
+    "name": "stellar",
+    "utc": "2026-09-25T22:27:09.360740+00:00",
+    "query": "select * from keplerstellar where kepid=5610665",
+    "url": "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=select+%2A+from+keplerstellar+where+kepid%3D5610665&format=csv",
+    "success": true,
+    "rows": 5,
+    "sha256": "0fb6ec8d0861fcec10430eedd8c6cbb131d18fc4b29a689231350afbb1128560",
+    "error": ""
+  },
+  {
+    "name": "confirmed_names",
+    "utc": "2026-09-25T22:27:16.504961+00:00",
+    "query": "select * from keplernames where kepid=5610665",
+    "url": "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=select+%2A+from+keplernames+where+kepid%3D5610665&format=csv",
+    "success": true,
+    "rows": 0,
+    "sha256": "2002b70e63a9d832d1623f068eedcb69422391e6a4bf6d9db7eb317316dc55a7",
+    "error": ""
+  }
+]

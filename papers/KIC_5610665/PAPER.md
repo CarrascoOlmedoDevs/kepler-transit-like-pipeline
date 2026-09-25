@@ -6,7 +6,7 @@
 
 ## Resumen
 
-Se investiga una señal de tránsito encontrada por Sakanet en la fotometría Kepler de KIC 5610665. La reconstrucción de las 18 curvas Q0–Q17 reproduce cinco detecciones del análisis original. La señal de mayor prioridad tiene período de 215,3975 días, profundidad de 75,17 ± 7,50 ppm y duración de 13,4316 horas; la incertidumbre es interna al estimador y no incorpora ruido correlacionado ni selección entre múltiples períodos. Se presentan la curva plegada, los seis eventos con datos y una auditoría de cobertura. Dos ventanas conservan solo el 29 % y 31 % de la duración nominal; los dos eventos más fuertes aportan el 72,4 % del peso positivo del diagnóstico de consistencia. Las señales de 215,40 y 213,09 días no comparten cadencias de tránsito. Cinco de ocho reordenaciones de trimestres producen detecciones de SNR comparable o mayor, pero ninguna de esas detecciones carece de alertas de vetting; la inversión no produce detecciones aceptadas. Las consultas archivadas no encuentran coincidencias por KIC en KOI acumulativa, TCE DR25 o nombres Kepler confirmados. TESS sector 40 carece de sensibilidad suficiente en esta extracción para comprobar un único evento de 75 ppm. La señal requiere una evaluación del ruido correlacionado y de su localización antes de atribuirle una naturaleza planetaria.
+Se investiga una señal de tránsito encontrada por Sakanet en la fotometría Kepler de KIC 5610665. La reconstrucción de las 18 curvas Q0–Q17 reproduce cinco detecciones del análisis original. La señal de mayor prioridad tiene período de 215,3975 días, profundidad de 75,17 ± 7,50 ppm y duración de 13,4316 horas; la incertidumbre es interna al estimador y no incorpora ruido correlacionado ni selección entre múltiples períodos. Se presentan la curva plegada, los seis eventos con datos y una auditoría de cobertura. Dos ventanas conservan solo el 29 % y 31 % de la duración nominal; los dos eventos más fuertes aportan el 72,4 % del peso positivo del diagnóstico de consistencia. Los cuatro eventos de mayor cobertura son inconsistentes con profundidad constante bajo los errores internos de ruido blanco (χ² = 11,76 para 3 grados de libertad; p nominal = 0,0082). La agrupación por módulo muestra profundidades diferentes, pero la dilución estimada en las cabeceras no explica esa diferencia. Las señales de 215,40 y 213,09 días no comparten cadencias de tránsito. Cinco de ocho reordenaciones de trimestres producen detecciones de SNR comparable o mayor, pero ninguna de esas detecciones carece de alertas de vetting; la inversión no produce detecciones aceptadas. Las consultas archivadas no encuentran coincidencias por KIC en KOI acumulativa, TCE DR25 o nombres Kepler confirmados. TESS sector 40 carece de sensibilidad suficiente en esta extracción para comprobar un único evento de 75 ppm. La señal requiere una evaluación del ruido correlacionado y de su localización antes de atribuirle una naturaleza planetaria.
 
 **Palabras clave:** Kepler; tránsitos; ruido instrumental; TESS; KIC 5610665.
 
@@ -56,13 +56,13 @@ La profundidad global es 75,17 ± 7,50 ppm, con SNR = 10,03. El error se obtiene
 
 | Ciclo | Centro BKJD | Q | Módulo/canal | Puntos válidos | Cobertura | Borde más cercano (h) | Centro en segmento | Profundidad local ± error interno (ppm) |
 |---:|---:|---:|---|---:|---:|---:|---|---:|
-| 0 | 260.5451 | 3 | 17/57 | 28 | 100.0 % | 7.44 | Sí | 90.41 ± 14.34 |
-| 1 | 475.9426 | 5 | 9/25 | 0 | 0.0 % | 8.03 | No | — |
-| 2 | 691.3401 | 7 | 17/57 | 24 | 86.5 % | 4.90 | Sí | 79.89 ± 15.49 |
-| 3 | 906.7376 | 10 | 7/17 | 8 | 28.7 % | 2.85 | No | -51.37 ± 26.83 |
-| 4 | 1122.1351 | 12 | 19/65 | 8 | 30.8 % | 2.57 | No | 75.44 ± 26.83 |
-| 5 | 1337.5326 | 14 | 7/17 | 27 | 96.4 % | 8.25 | Sí | 25.34 ± 14.60 |
-| 6 | 1552.9301 | 16 | 19/65 | 27 | 100.0 % | 120.94 | Sí | 55.29 ± 14.60 |
+| 0 | 260,5451 | 3 | 17/57 | 28 | 100,0 % | 7,44 | Sí | 90,41 ± 14,34 |
+| 1 | 475,9426 | 5 | 9/25 | 0 | 0,0 % | 8,03 | No | — |
+| 2 | 691,3401 | 7 | 17/57 | 24 | 86,5 % | 4,90 | Sí | 79,89 ± 15,49 |
+| 3 | 906,7376 | 10 | 7/17 | 8 | 28,7 % | 2,85 | No | -51,37 ± 26,83 |
+| 4 | 1122,1351 | 12 | 19/65 | 8 | 30,8 % | 2,57 | No | 75,44 ± 26,83 |
+| 5 | 1337,5326 | 14 | 7/17 | 27 | 96,4 % | 8,25 | Sí | 25,34 ± 14,60 |
+| 6 | 1552,9301 | 16 | 19/65 | 27 | 100,0 % | 120,94 | Sí | 55,29 ± 14,60 |
 
 Los errores locales son cocientes profundidad/SNR del diagnóstico, cuyo ruido supone muestras independientes y no incorpora incertidumbre de la mediana local. Un ruido doble no implica por sí mismo la mitad de observaciones: bajo ruido blanco constante correspondería a una cuarta parte. Aquí la cobertura se ha medido directamente.
 
@@ -71,6 +71,33 @@ El ciclo 1 está dentro del intervalo de Q5, módulo 9/canal 25, pero su ventana
 Los ciclos 0 y 2 aportan el 72,4 % de Σmax(SNRᵢ,0)², la definición positiva empleada por Sakanet; usando cuadrados con ambos signos aportan el 69,6 %. Al excluir sus ventanas locales, la medida global a efeméride fija queda en 55,62 ± 10,00 ppm (SNR = 5,56). Al excluir solo los dos eventos parciales, queda en 82,67 ± 7,68 ppm (SNR = 10,77). Estas pruebas posteriores a la selección muestran dependencia de los eventos y no constituyen confirmaciones independientes.
 
 La discrepancia de trimestres del CSV está explicada por el código: `transit_consistency` exporta los índices de `curve.segment` como `quarters_with_transits`. Al traducirlos mediante la lista de productos, [3,7,8,12,14,15] corresponde a Q3, Q7, Q10, Q12, Q14 y Q16. Los tiempos y flujos se reconstruyen correctamente; el problema identificado es la etiqueta del trimestre.
+
+### 3.1.1. Consistencia de profundidades
+
+Con σᵢ = |profundidadᵢ/SNRᵢ| se calcula la media ponderada μ = Σ(dᵢ/σᵢ²)/Σ(1/σᵢ²) y χ² = Σ[(dᵢ − μ)/σᵢ]², con n−1 grados de libertad. Para los seis eventos, μ = 55,89 ± 6,87 ppm y χ² = 29,08 para 5 grados de libertad (p nominal = 2,23×10⁻⁵). Para Q3, Q7, Q14 y Q16, con cobertura ≥85 %, μ = 62,51 ± 7,37 ppm y χ² = 11,76 para 3 grados de libertad (p nominal = 0,0082). Se denominan eventos de mayor cobertura: Q7 conserva el 86,5 %, no una ventana completa. La media de profundidades locales no es el estimador global de 75,17 ppm: cambian las líneas base y los pesos.
+
+Estas pruebas suponen errores gaussianos independientes, efeméride fija y ausencia de variación de profundidad; no incorporan selección de señal, incertidumbre de línea base, ruido correlacionado ni el muestreo de una morfología física en eventos parciales. Son diagnósticos nominales de inconsistencia, no probabilidades planetarias. Multiplicar todos los errores por aproximadamente 1,98 en el conjunto de cuatro eventos llevaría χ² reducido a uno; esto ilustra sensibilidad a errores subestimados, no mide ni corrige el ruido correlacionado.
+
+Q14 tiene 25,34 ± 14,60 ppm con el 96,4 % de cobertura. Frente a la media de los otros tres eventos de mayor cobertura, 75,21 ± 8,54 ppm, la diferencia equivale a 2,95σ al combinar ambos errores bajo independencia. El valor de 3,4σ frente a 75 ppm omite la incertidumbre de la referencia; la profundidad global además comparte datos con Q14. Retirar Q10 y Q12 aumenta el SNR global a 10,77: los eventos parciales no inflan esa medida, pero persiste la inconsistencia entre los restantes.
+
+### 3.1.2. Agrupación por detector y métricas de apertura
+
+Se extrajeron `CROWDSAP` y `FLFRCSAP` de las cabeceras de las 18 curvas originales. La tabla agrupa los eventos por módulo/canal; las parejas de métricas siguen el orden de los trimestres.
+
+| Módulo/canal | Trimestres | Media local ponderada (ppm) | CROWDSAP | FLFRCSAP |
+|---|---|---:|---|---|
+| 17/57 | Q3, Q7 | 85,56 ± 10,52 | 1,0000; 1,0000 | 0,9522; 0,9630 |
+| 19/65 | Q12, Q16 | 59,89 ± 12,83 | 1,0000; 1,0000 | 0,8603; 0,9632 |
+| 7/17 | Q10, Q14 | 7,81 ± 12,83 | 0,9995; 0,9995 | 0,9853; 0,9852 |
+| 9/25 | Q5 | Sin cadencias en la ventana | 1,0000 | 0,9736 |
+
+`CROWDSAP` estima la fracción del flujo de la apertura atribuida al objetivo; `FLFRCSAP` estima la fracción del flujo del objetivo capturada. PDC aplica las correcciones de contaminación y pérdida de flujo [14]; no se divide PDCSAP de nuevo por estas métricas. La diferencia de CROWDSAP entre 17/57 y 7/17 es solo 0,0005: incluso antes de la corrección, la dilución modelada de un tránsito del objetivo de 75 ppm cambiaría su profundidad en aproximadamente 0,038 ppm, muy por debajo de las diferencias observadas. FLFRCSAP no es una fracción de contaminación.
+
+![Profundidades por evento y módulo](figures/seasonal_depths.png)
+
+**Figura 3.** Profundidades locales y medias ponderadas por módulo/canal. Cuadrados huecos: ventanas con cobertura <85 %. Línea discontinua: media local de los seis eventos. Las barras son errores internos bajo ruido blanco.
+
+Los dos eventos más fuertes comparten 17/57 y los más débiles 7/17. La agrupación es exploratoria, con solo dos eventos por módulo y confundida con época, bordes y cobertura; incluso Q10 y Q14 difieren entre sí. Las cabeceras no respaldan una explicación mediante la dilución estimada del objetivo, pero tampoco excluyen una fuente variable tenue no modelada ni una sistemática de canal. No se ha localizado el origen de la señal. Q7, uno de los eventos dominantes, tiene además el mayor RB_LEVEL a la duración de prueba de 24 cadencias (0,554; sección 3.3).
 
 ### 3.2. Relación entre las cinco detecciones
 
@@ -88,7 +115,9 @@ Las duraciones repetidas de 22,1832 h y las banderas de borde en tres señales a
 
 ### 3.3. Calidad y rolling band
 
-Se inspeccionaron QUALITY y RB_LEVEL de los TPF en las siete ventanas, incluida la vacía. En las cadencias presentes no se activan los bits de *rolling band* en apertura ni máscara (131072 y 262144), que no forman parte de `default` [7]. RB_LEVEL no es cero: para la duración de prueba de 24 cadencias, los máximos en filas de apertura de Q3/Q7/Q10/Q12/Q14/Q16 son 0,332/0,554/0,168/0,309/0,383/0,457. La tabla completa conserva las cinco duraciones de prueba [9]. Ausencia de esos bits no equivale a ausencia de toda sistemática; las exclusiones de calidad y los bordes siguen siendo relevantes.
+Se inspeccionaron QUALITY y RB_LEVEL de los TPF en las siete ventanas, incluida la vacía. En las cadencias presentes no se activan los bits de *rolling band* en apertura ni máscara (131072 y 262144), que no forman parte de `default` [7]. RB_LEVEL expresa amplitud respecto al umbral de detección del artefacto; uno es la referencia de umbral [9]. Las cinco duraciones RBTDUR están en cadencias largas, no horas, según la errata oficial aplicable a Kepler DR25 [15].
+
+Para 24 cadencias (≈11,77 h, la prueba más cercana a la duración de 13,43 h), los máximos en filas de apertura de Q3/Q7/Q10/Q12/Q14/Q16 son 0,332/0,554/0,168/0,309/0,383/0,457. Q7 tiene el máximo a esta duración y es uno de los dos eventos dominantes. Estos seis valores son inferiores a uno, pero no todos los valores de la auditoría lo son: a tres cadencias los máximos van de 1,261 a 1,509 y a seis cadencias Q3 y Q14 también superan uno. La documentación advierte que los bits binarios no son un indicador fiable por sí solos [15]. Las escalas cortas no demuestran que el artefacto origine la señal de 13 h; tampoco la ausencia de bits demuestra una curva libre de sistemáticas. La [tabla propia completa](data/kepler_review/rolling_band.csv) conserva las cinco duraciones.
 
 ### 3.4. Controles de inversión y reordenación
 
@@ -98,18 +127,22 @@ La comparación complementaria con vetting cambia la lectura: **0 de ocho** reor
 
 | Realización | Semilla | Detecciones aceptadas, todos los períodos | Máximo SNR 150–300 d | Número ≥10,0281 | De ellas sin banderas |
 |---|---:|---:|---:|---:|---:|
-| Nominal | 42 | 5 | 10.276 | 4 | 1 |
-| Invertida | 42 | 0 | — | 0 | 0 |
-| Reordenada | 42 | 3 | 10.439 | 2 | 0 |
-| Reordenada | 43 | 4 | 11.422 | 3 | 0 |
-| Reordenada | 44 | 2 | 11.548 | 1 | 0 |
-| Reordenada | 45 | 4 | 9.450 | 0 | 0 |
+| Nominal | — | 5 | 10,276 | 4 | 1 |
+| Invertida | — | 0 | — | 0 | 0 |
+| Reordenada | 42 | 3 | 10,439 | 2 | 0 |
+| Reordenada | 43 | 4 | 11,422 | 3 | 0 |
+| Reordenada | 44 | 2 | 11,548 | 1 | 0 |
+| Reordenada | 45 | 4 | 9,450 | 0 | 0 |
 | Reordenada | 46 | 0 | — | 0 | 0 |
-| Reordenada | 47 | 4 | 9.120 | 0 | 0 |
-| Reordenada | 48 | 2 | 10.581 | 1 | 0 |
-| Reordenada | 49 | 3 | 10.275 | 1 | 0 |
+| Reordenada | 47 | 4 | 9,120 | 0 | 0 |
+| Reordenada | 48 | 2 | 10,581 | 1 | 0 |
+| Reordenada | 49 | 3 | 10,275 | 1 | 0 |
 
-El guion indica ausencia de detecciones aceptadas en el intervalo, no un SNR medido igual a cero. Se conservan todas las realizaciones y sus motivos de parada en `data/null_controls`.
+Bajo un modelo hipotético de ocho ensayos Bernoulli independientes con tasa común, cero éxitos daría una cota superior unilateral del 95 % de 1−0,05^(1/8) = 31,2 %. El extremo superior del intervalo bilateral de colas iguales del 95 % sería 36,9 %. La primera cifra es la cota unilateral, no una FAP medida: no se ha validado ese modelo como representación de las falsas alarmas astronómicas de esta estrella.
+
+Las ocho detecciones reordenadas que satisfacen período y SNR tienen alerta de duración en borde; siete tienen además otras alertas. Los recuentos, no excluyentes, son dominio individual (5), par/impar (5), preferencia por período doble (3), secundaria (1) y anomalía en fase 0,5 (1). Solo una falla exclusivamente por duración. Incluyendo la curva nominal, hay doce detecciones en ese rango y umbral: once con alertas y una sin ellas. No son ensayos independientes ni once falsos positivos confirmados. El [Apéndice B](APENDICE_CONTROLES.md) enumera las alertas concretas de las 27 detecciones aceptadas, incluidas las de menor SNR.
+
+El guion en la columna de SNR indica ausencia de detecciones aceptadas en el intervalo, no un SNR medido igual a cero. Se conservan todas las realizaciones y sus motivos de parada en `data/null_controls`.
 
 
 ### 3.5. Coherencia de la duración
@@ -130,13 +163,15 @@ Las doce extracciones exploratorias producen profundidades entre −382 y 1333 p
 
 Consultas por `kepid=5610665`, guardadas con fecha UTC, consulta y SHA256, devuelven cero filas en `cumulative`, `q1_q17_dr25_tce` y `keplernames`. Se consultaron el 25 de septiembre de 2026 UTC (26 de septiembre en España). Esto establece ausencia de coincidencia por ese identificador en esas tablas y fecha; no una búsqueda exhaustiva de literatura, alias o contaminación por vecinos [6,12].
 
+El pipeline oficial exigía MES ≥7,1 y al menos tres tránsitos, además de pruebas adicionales [8]. El MES de Kepler y el SNR de profundidad/error de Sakanet son estadísticos distintos. La ausencia en TCE DR25 documenta falta de recuperación catalogada independiente; sin calibrar recuperación, procesamiento y selección no cuantifica cuánto pesa contra esta señal ni contradice por sí sola el SNR de Sakanet.
+
 La copia histórica FPWG de junio de 2016 alojada en MAST contiene 599 filas y ninguna coincidencia por `Kepler_Id=5610665`. Es un producto relacionado con DR24, no una comprobación de la tabla FPWG actual [13]. El intento de consultar `fpwg` mediante la API antigua fue rechazado como tabla inválida y se conserva como intento fallido, no como resultado vacío.
 
-Las imágenes diferenciales Kepler disponibles no incluyen un ajuste PRF con incertidumbres de centroide. Se conservan en el [material complementario](figures/kepler_pixels.png). Las imágenes estáticas IRSA y la contraparte 2MASS apoyan la identificación estelar, no una detección de tránsito. No se ha completado una exclusión de fuentes vecinas.
+Las imágenes diferenciales Kepler disponibles no incluyen un ajuste PRF con incertidumbres de centroide. Se conservan en el [material complementario](figures/kepler_pixels.png). Las imágenes estáticas IRSA y la contraparte 2MASS apoyan la identificación estelar, no una detección de tránsito. Las métricas fotométricas de la contraparte AllWISE describen la calidad de su fotometría infrarroja [5], no la significancia de la señal periódica Kepler. No se ha completado una exclusión de fuentes vecinas.
 
 ## 5. Discusión y conclusión
 
-El valor del SNR global queda limitado por la selección entre períodos, correlaciones temporales, cobertura parcial y proximidad de eventos a bordes. Los dos eventos más fuertes dominan el diagnóstico local, aunque al retirarlos permanece una depresión global más débil a la efeméride fijada. Los controles muestran que el SNR aislado no discrimina suficientemente; no reproducen una detección comparable sin alertas, pero su pequeño número y reordenamiento no estacional impiden cuantificar la fiabilidad. La coherencia aproximada de duración y la ausencia de coincidencia en tres tablas son información útil, pero no resuelven la naturaleza de la señal.
+El resultado cuantitativo más adverso es la inconsistencia de profundidades bajo el modelo de errores internos, presente también entre los cuatro eventos de mayor cobertura. La agrupación por módulo motiva investigar sistemáticas y contaminación, pero CROWDSAP no respalda una diferencia suficiente de dilución modelada. Estas observaciones debilitan la interpretación de profundidad constante sin identificar una causa alternativa. El valor del SNR global queda limitado por la selección entre períodos, correlaciones temporales, cobertura parcial y proximidad de eventos a bordes. Los dos eventos más fuertes dominan el diagnóstico local, aunque al retirarlos permanece una depresión global más débil a la efeméride fijada. Los controles muestran que el SNR aislado no discrimina suficientemente; no reproducen una detección comparable sin alertas, pero su pequeño número y reordenamiento no estacional impiden cuantificar la fiabilidad. La coherencia aproximada de duración y la ausencia de coincidencia en tres tablas son información útil, pero no resuelven la naturaleza de la señal.
 
 Los siguientes análisis deben estimar una efeméride y profundidad con ruido correlacionado, comparar aplanados que protejan los eventos y cuantificar el efecto de bordes con inyección-recuperación. También se requiere localizar la fuente mediante imágenes diferenciales y PRF, contrastar vecinos y ampliar controles con un protocolo estacional y población adecuada. El presente trabajo documenta una señal de seguimiento, sin confirmar un planeta ni asignarle una probabilidad física.
 
@@ -163,3 +198,6 @@ Los archivos, procedimientos y registros están descritos en el [README](README.
 11. NASA HEASARC. [Fechas de sectores TESS](https://heasarc.gsfc.nasa.gov/docs/tess/sector.html).
 12. NASA Exoplanet Archive. [Servicio TAP](https://exoplanetarchive.ipac.caltech.edu/docs/TAP/usingTAP.html).
 13. MAST. [Procedencia y fecha de la copia histórica FPWG](https://archive.stsci.edu/pub/kepler/catalogs/README_FP).
+
+14. MAST. [Kepler Archive Manual: PDCSAP, CROWDSAP y FLFRCSAP](https://archive.stsci.edu/files/live/sites/mast/files/home/missions-and-data/kepler/_documents/archive_manual.pdf).
+15. MAST. [K2 Handbook: errata RBTDUR y límites de los bits de rolling band, también aplicables a Kepler DR25](https://archive.stsci.edu/k2/manuals/k2_handbook.pdf).

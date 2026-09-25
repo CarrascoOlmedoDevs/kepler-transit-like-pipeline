@@ -26,3 +26,7 @@
 Los scripts nuevos se compilaron y los enlaces locales del artículo y apéndice se verificaron. `CHECKSUMS.sha256` contiene los archivos de la entrega, excluido el propio manifiesto. Los hashes de los módulos científicos utilizados se guardan en `data/source_snapshot.json`.
 
 No se volvió a entrenar RF/CNN ni se recuperaron sus pesos. No se realizó ajuste PRF, validación planetaria, inferencia con ruido correlacionado, comprobación exhaustiva de vecinos o inyección-recuperación de completitud. La reproducibilidad numérica no certifica la interpretación física.
+
+## Segunda revisión
+
+Se ejecutó `seasonal_consistency.py` sobre los 18 FITS originales. Se guardan sus nombres y SHA256 junto a las métricas de cabecera. Los estadísticos se calculan con profundidades y SNR sin redondear. Se verificaron 12 detecciones sobre umbral, 11 con alertas, 8 reordenadas con borde de duración y solo 1 exclusivamente con esa alerta. La figura estacional se inspeccionó visualmente. No se repitió BLS ni se modificaron los CSV originales. Los p-valores, errores y cotas son condicionales a los supuestos documentados.

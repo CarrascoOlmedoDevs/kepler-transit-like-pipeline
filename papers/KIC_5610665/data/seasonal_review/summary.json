@@ -1,0 +1,134 @@
+{
+  "assumptions": "Fixed selected ephemeris; independent Gaussian errors equal to internal depth/SNR; local baseline uncertainty, correlated noise, selection and partial-transit morphology unmodeled. P-values are nominal consistency diagnostics, not planet probabilities.",
+  "six_events": {
+    "quarters": [
+      3,
+      7,
+      10,
+      12,
+      14,
+      16
+    ],
+    "n": 6,
+    "weighted_mean_ppm": 55.88899044673192,
+    "mean_internal_error_ppm": 6.870561712184833,
+    "chi2": 29.082776658234547,
+    "dof": 5,
+    "nominal_p": 2.233646713525483e-05,
+    "error_multiplier_for_reduced_chi2_one": 2.4117535802081664
+  },
+  "coverage_ge_85_percent": {
+    "quarters": [
+      3,
+      7,
+      14,
+      16
+    ],
+    "n": 4,
+    "weighted_mean_ppm": 62.508503839529745,
+    "mean_internal_error_ppm": 7.37087808539965,
+    "chi2": 11.764286846072068,
+    "dof": 3,
+    "nominal_p": 0.008235816519463741,
+    "error_multiplier_for_reduced_chi2_one": 1.9802598184810722
+  },
+  "coverage_ge_95_percent": {
+    "quarters": [
+      3,
+      14,
+      16
+    ],
+    "n": 3,
+    "weighted_mean_ppm": 57.42009077893644,
+    "mean_internal_error_ppm": 8.380409226737049,
+    "chi2": 10.136007389107023,
+    "dof": 2,
+    "nominal_p": 0.006294974297141396,
+    "error_multiplier_for_reduced_chi2_one": 2.2512227110069567
+  },
+  "module_groups": [
+    {
+      "module": 17,
+      "channel": 57,
+      "quarters": [
+        3,
+        7
+      ],
+      "n": 2,
+      "weighted_mean_ppm": 85.55538786721594,
+      "mean_internal_error_ppm": 10.523749665709639,
+      "chi2": 0.24806789655282996,
+      "dof": 1,
+      "nominal_p": 0.6184388285045422,
+      "error_multiplier_for_reduced_chi2_one": 0.49806414903386687
+    },
+    {
+      "module": 19,
+      "channel": 65,
+      "quarters": [
+        12,
+        16
+      ],
+      "n": 2,
+      "weighted_mean_ppm": 59.89287870067625,
+      "mean_internal_error_ppm": 12.827386113295681,
+      "chi2": 0.4351791951393497,
+      "dof": 1,
+      "nominal_p": 0.5094584776498099,
+      "error_multiplier_for_reduced_chi2_one": 0.6596811314107367
+    },
+    {
+      "module": 7,
+      "channel": 17,
+      "quarters": [
+        10,
+        14
+      ],
+      "n": 2,
+      "weighted_mean_ppm": 7.809329643203494,
+      "mean_internal_error_ppm": 12.827383477815077,
+      "chi2": 6.306328550153167,
+      "dof": 1,
+      "nominal_p": 0.012030772280692057,
+      "error_multiplier_for_reduced_chi2_one": 2.511240440529972
+    }
+  ],
+  "exploratory_between_modules": {
+    "delta_chi2": 22.0932010163892,
+    "dof": 2,
+    "nominal_p": 1.5941249368897095e-05,
+    "within_group_chi2": 6.989575641845347,
+    "within_group_dof": 3,
+    "caution": "Grouping inspected after seeing depths; only two events per module, confounded with epoch, gaps and partial coverage. Not causal attribution."
+  },
+  "q14_vs_other_high_coverage": {
+    "other_mean_ppm": 75.21041319504981,
+    "other_mean_error_ppm": 8.538048862679869,
+    "z_independent_white_noise": 2.947686976339678,
+    "z_vs_fixed_75_17_ignoring_reference_error": 3.4117050966220033
+  },
+  "zero_of_eight_binomial": {
+    "n": 8,
+    "successes": 0,
+    "upper_95_one_sided": 0.31234397806636793,
+    "upper_95_two_sided_equal_tail": 0.36941664755281933,
+    "scope": "Hypothetical independent Bernoulli trials with common rate. Not validated for these shuffles; not a calibrated FAP or physical planet probability."
+  },
+  "high_snr_alerts": {
+    "threshold": 10.028094622665412,
+    "all_selected": 12,
+    "with_flags": 11,
+    "without_flags": 1,
+    "shuffled_selected": 8,
+    "shuffled_flag_counts": {
+      "duration-at-boundary": 8,
+      "single-event-dominated": 5,
+      "odd-even": 5,
+      "double-period-preferred": 3,
+      "secondary-eclipse": 1,
+      "phase-0.5-anomaly": 1
+    },
+    "shuffled_only_duration_boundary": 1,
+    "caution": "Detections in the same light curve are dependent; nominal and shuffled populations are not independent and this tally is not a reliability estimate."
+  }
+}

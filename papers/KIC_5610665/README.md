@@ -42,3 +42,9 @@ Los NPZ completos se generan durante la reproducción y no se versionan. Las dos
 Código sujeto a la licencia del repositorio; observaciones y catálogos sujetos a las condiciones de los proveedores. Estado científico: señal sin confirmar.
 
 La captura comprimida `data/catalog_checks/tess_sector_dates.html.gz` conserva las fechas utilizadas. Tras descomprimirla, `audit_sector_dates.py` reproduce la comparación sectorial. Las cadencias de otros sectores no fueron descargadas.
+
+## Segunda revisión: profundidad y detector
+
+`python scripts/seasonal_consistency.py raw` extrae las métricas de las 18 cabeceras originales, calcula los diagnósticos de profundidad y recuentos de alertas y genera `figures/seasonal_depths.png`. Usa los diagnósticos archivados en `data/kepler_review` y `data/null_controls`; no repite la búsqueda BLS. Escribe `data/seasonal_review`: cabeceras con hashes, errores locales, pruebas de consistencia y alertas. Ejecutar en una copia para conservar esta entrega.
+
+El [Apéndice B](APENDICE_CONTROLES.md) enumera las 27 detecciones de los controles con sus alertas completas. La cota binomial es ilustrativa y los p-valores son nominales bajo ruido blanco, no probabilidades planetarias.

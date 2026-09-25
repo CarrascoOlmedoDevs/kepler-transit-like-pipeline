@@ -1,0 +1,13 @@
+kind,seed,order,period_days,snr,transits,priority,max_event_contribution,vetting_flags,classification,secondary_eclipse,secondary_brightening,phase_0_5_anomaly
+nominal,42,1,213.08678619053012,10.209137377568501,7.0,1.5216846242622466,0.517030400609761,odd-even|secondary-eclipse|phase-0.5-anomaly|duration-at-boundary|single-event-dominated,false-positive-like,True,False,True
+nominal,42,2,273.9078439051942,10.27606471946782,5.0,21.622260483627237,0.5369939544359555,duration-at-boundary|single-event-dominated,low-confidence candidate,False,False,False
+nominal,42,4,157.6738134871411,10.21690913563026,9.0,21.51652960877978,0.6074031897224554,duration-at-boundary|single-event-dominated,low-confidence candidate,False,False,False
+nominal,42,5,215.39750429110552,10.02809462263579,6.0,55.989496945402806,0.43389898665946586,,interesting candidate,False,False,False
+shuffled,42,2,282.24909065941813,10.062487336957146,5.0,23.98908715298419,0.6139408169114456,duration-at-boundary|single-event-dominated,low-confidence candidate,False,False,False
+shuffled,42,3,227.3609553644956,10.43874476354494,7.0,36.880502960739015,0.37325199726315156,duration-at-boundary,low-confidence candidate,False,False,False
+shuffled,43,2,286.4161523952925,10.078668986376519,6.0,11.48486599494007,0.46354901300600176,odd-even|duration-at-boundary,false-positive-like,False,False,False
+shuffled,43,3,240.57605127228888,10.40577442387168,7.0,6.926307195210268,0.5129969265523523,odd-even|double-period-preferred|duration-at-boundary|single-event-dominated,false-positive-like,False,False,False
+shuffled,43,4,221.97637317041188,11.42230833041652,6.0,8.396647917931986,0.648164360605263,odd-even|duration-at-boundary|single-event-dominated,false-positive-like,False,False,False
+shuffled,44,2,291.45219570959944,11.548336717444581,5.0,8.322242298469062,0.5327816472974615,odd-even|double-period-preferred|duration-at-boundary|single-event-dominated,false-positive-like,False,False,False
+shuffled,48,1,240.2264404400093,10.58139853219511,6.0,4.698744433653737,0.5431064049658731,secondary-eclipse|phase-0.5-anomaly|duration-at-boundary|single-event-dominated,false-positive-like,True,False,True
+shuffled,49,1,256.3508778983116,10.275317858638182,5.0,10.740487380074962,0.47311582936565577,odd-even|double-period-preferred|duration-at-boundary,false-positive-like,False,False,False

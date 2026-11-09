@@ -1,0 +1,36 @@
+.topnav{display:flex;gap:6px;margin-left:auto;margin-right:18px}
+.topnav a{color:var(--muted);text-decoration:none;padding:7px 12px;border-radius:8px;font-size:13px}
+.topnav a.active,.topnav a:hover{color:var(--text);background:#16263a}
+.home-intro{padding-bottom:10px}
+.home-intro p.muted{max-width:720px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:10px 0 22px}
+.kpi{background:var(--panel);border:1px solid var(--edge);border-radius:14px;padding:16px 18px}
+.kpi strong{display:block;font-size:30px;font-weight:600;line-height:1.2}
+.kpi span{color:var(--muted);font-size:12px}
+.kpi small{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.banner{background:#2a2418;border:1px solid #5a4a2a;color:#ffd9a0;padding:12px 14px;border-radius:10px;font-size:13px;margin:0 0 20px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px;margin-top:14px}
+.star{background:#0d1726;border:1px solid var(--edge);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.star.prioritario{border-color:#3f8f84;box-shadow:0 0 0 1px #3f8f8433}
+.star img{display:block;width:100%;height:auto;border-radius:8px;background:#fff}
+.star-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.star h3{margin:0;font-size:17px}
+.tag{font-size:11px;padding:3px 9px;border-radius:20px;border:1px solid var(--edge);color:var(--muted)}
+.tag.new{color:#0a2a26;background:var(--cyan);border-color:var(--cyan);font-weight:600}
+.tag.known{color:#c9d6e2}
+.facts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px 10px;margin:4px 0}
+.facts div{min-width:0}
+.facts dt{font-size:10px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
+.facts dd{margin:0;font-size:13px;font-variant-numeric:tabular-nums}
+.reason,.flags{margin:0}
+.flags{color:#ffc9a0}
+.star .actions{margin-top:auto;align-items:center}
+.follow.on{color:var(--cyan);border-color:#3f8f84}
+.open{font-size:13px;text-decoration:none}
+.empty{margin:8px 0 0}
+.more{margin-top:14px}
+.watch-form{display:grid;grid-template-columns:140px 1fr auto;gap:10px;align-items:end;margin-bottom:10px}
+.watch-form input{margin-top:0}
+.watch-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--edge)}
+.watch-row strong{display:block}
+@media(max-width:850px){.topnav{display:none}.facts{grid-template-columns:repeat(2,1fr)}.watch-form{grid-template-columns:1fr}}

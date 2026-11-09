@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Kepler · Resumen</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/home.css">
+  <script src="/home.js" defer></script>
+</head>
+<body>
+<header><a class="brand" href="/">KEPLER <span>OBSERVATORY</span></a><nav class="topnav"><a href="/" class="active">Resumen</a><a href="/control">Control de análisis</a></nav><span class="badge" id="status-badge">● CARGANDO</span></header>
+<main>
+  <section class="intro home-intro">
+    <div>
+      <p class="eyebrow">RESUMEN DEL OBSERVATORIO</p>
+      <h1>Estrellas a <em>seguir</em></h1>
+      <p class="muted">Lo más interesante de todo lo analizado, en todos los lotes y equipos. Es una selección para revisar a mano, no una confirmación de planetas.</p>
+    </div>
+  </section>
+  <p id="message" role="status"></p>
+
+  <section class="kpis" id="kpis"></section>
+  <p class="banner" id="no-model" hidden></p>
+
+  <section class="card">
+    <div class="row"><div><p class="eyebrow">PRIORITARIAS</p><h2>Señales serias</h2></div><span class="muted small" id="priority-count"></span></div>
+    <p class="muted small">RF ≥ 0,65, CNN ≥ 0,60, prioridad ≥ 35, SNR ≥ 10, al menos 3 tránsitos consistentes y ninguna alerta grave.</p>
+    <div class="cards" id="priority"></div>
+  </section>
+
+  <section class="card">
+    <div class="row"><div><p class="eyebrow">MI SEGUIMIENTO</p><h2>Estrellas marcadas</h2></div></div>
+    <form id="watch-form" class="watch-form">
+      <input id="watch-kic" inputmode="numeric" placeholder="KIC" aria-label="KIC a seguir">
+      <input id="watch-note" placeholder="Nota (opcional): por qué la sigues" aria-label="Nota">
+      <button type="submit">☆ Seguir</button>
+    </form>
+    <div id="watchlist"></div>
+  </section>
+
+  <section class="card">
+    <div class="row"><div><p class="eyebrow">A REVISAR</p><h2>Señales moderadas</h2></div><span class="muted small" id="review-count"></span></div>
+    <p class="muted small">Sin alertas graves y con al menos 3 tránsitos, pero por debajo de los umbrales de "prioritario". Merecen un vistazo.</p>
+    <div class="cards" id="review"></div>
+    <button class="secondary more" id="review-more" hidden>Ver más</button>
+  </section>
+
+  <footer>Se actualiza cada 20 s · Datos guardados en este PC · <a href="/control">Ir al control de análisis →</a></footer>
+</main>
+</body>
+</html>

@@ -1,5 +1,9 @@
 const $ = id => document.getElementById(id);
 let token = '', selected = null, busy = false, resultKey = '';
+// Enlaces desde el resumen: /control?job=…&kic=…
+const linkParams = new URLSearchParams(location.search);
+let wantedKic = linkParams.get('kic');
+selected = linkParams.get('job');
 const labels = {
   running: 'En ejecución', paused: 'Pausado', stopped: 'Detenido',
   completed: 'Finalizado', error: 'Error', ready: 'Preparado', pending: 'Pendiente',
@@ -272,6 +276,10 @@ async function refresh() {
       const option = node('option', `${seriousKics.has(Number(kic)) ? '✦ ' : ''}KIC ${kic} · ${labels[state.stars[kic]] || state.stars[kic]}${who ? ' · ' + who : ''}${kic === state.control ? ' (control)' : ''}`);
       option.value = kic;
       $('stars').append(option);
+    }
+    if (wantedKic && ids.map(String).includes(String(wantedKic))) {
+      $('stars').value = String(wantedKic);
+      wantedKic = null;
     }
     if (ids.includes(Number(old))) $('stars').value = old;
     $('stars').onchange = () => results(state);

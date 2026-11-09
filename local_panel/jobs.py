@@ -566,6 +566,80 @@ class Manager:
         return {'serious_count': len(serious), 'review_count': len(review),
                 'serious': serious, 'review': review}
 
+    # ------------------------------------------------------------------ resumen / seguimiento
+    OVERVIEW_FIELDS = ('rank', 'period_days', 'duration_hours', 'depth_ppm', 'depth_snr', 'number_of_transits',
+                       'rf_probability', 'cnn_probability', 'priority_score', 'known_koi', 'matched_koi_name',
+                       'known_disposition', 'known_tce', 'catalog_match_status', 'vetting_flags', 'plot_file')
+
+    def overview(self):
+        """Último resultado de cada estrella en todos los trabajos + lista de seguimiento."""
+        from kepler_detector.triage import assess_candidate
+        states = [s for s in self.snapshot() if s.get('task') != 'build']
+        latest = {}
+        for state in states:  # Orden de creación: el análisis más reciente de cada KIC gana.
+            for kic, status in state.get('stars', {}).items():
+                if status == 'complete' and (self.folder / state['id'] / 'workspace/results' /
+                                             f'KIC_{int(kic)}' / 'candidates.csv').exists():
+                    latest[int(kic)] = state
+        rows, labels, without_model = [], {}, set()
+        for kic, state in latest.items():
+            path = self.folder / state['id'] / 'workspace/results' / f'KIC_{kic}' / 'candidates.csv'
+            with path.open(encoding='utf-8', newline='') as stream:
+                for row in csv.DictReader(stream):
+                    assessment = assess_candidate(row)
+                    label = assessment['triage_label']
+                    labels[label] = labels.get(label, 0) + 1
+                    if str(row.get('rf_available', '')).lower() != 'true':
+                        without_model.add(kic)
+                    if label not in ('prioritario', 'revisar'):
+                        continue
+                    item = {key: row.get(key, '') for key in self.OVERVIEW_FIELDS}
+                    item.update(kic=kic, job=state['id'], analyzed=state['created'],
+                                by=(state.get('done_by') or {}).get(str(kic), ''),
+                                label=label, reason=assessment['triage_reason'])
+                    rows.append(item)
+        watch = read(self.folder / 'watchlist.json', {}) or {}
+        followed = []
+        for kic, entry in watch.items():
+            state = latest.get(int(kic))
+            followed.append(dict(entry, kic=int(kic), job=state['id'] if state else None))
+        rank = {'prioritario': 0, 'revisar': 1}
+        rows.sort(key=lambda r: (rank[r['label']], -self._float(r['priority_score'])))
+        model = self.root / 'models/kepler_rf_metrics.json'
+        helpers = self.cluster.details()['helpers'] if self.cluster else []
+        return dict(stars=len(latest), candidates=sum(labels.values()), labels=labels, follow=rows,
+                    watchlist=sorted(followed, key=lambda f: -f.get('added', 0)),
+                    without_model=len(without_model), model=read(model, None) if model.exists() else None,
+                    helpers_online=sum(h['online'] for h in helpers), helpers=len(helpers),
+                    running=sum(s['status'] == 'running' for s in states),
+                    discovery=read(self.folder / 'discovery_automation.json', {}) or {})
+
+    @staticmethod
+    def _float(value):
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return 0.0
+        return number if number == number else 0.0
+
+    def watch(self, kic, action, note=''):
+        kic = int(kic)
+        if kic <= 0:
+            raise ValueError('KIC inválido')
+        with self.lock:
+            path = self.folder / 'watchlist.json'
+            watch = read(path, {}) or {}
+            if action == 'add':
+                entry = watch.get(str(kic), {'added': time.time()})
+                entry['note'] = str(note or '')[:500]
+                watch[str(kic)] = entry
+            elif action == 'remove':
+                watch.pop(str(kic), None)
+            else:
+                raise ValueError('Acción desconocida')
+            write(path, watch)
+            return watch
+
     def result_path(self, job, kic, filename):
         state = read(self.jobdir(job) / 'state.json')
         if str(kic) not in state['stars'] or state['stars'][str(kic)] != 'complete':

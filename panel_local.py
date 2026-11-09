@@ -61,6 +61,8 @@ def make_server(root=ROOT, port=8768, manager=None):
                     return self.send(manager.cnn_details())
                 if path == '/api/discovery':
                     return self.send(manager.discovery_details())
+                if path == '/api/overview':
+                    return self.send(manager.overview())
                 if path == '/api/cluster':
                     return self.send(manager.cluster.details() if manager.cluster else {'enabled': False})
                 if len(parts) == 3 and parts[:2] == ['api', 'jobs']:
@@ -75,8 +77,9 @@ def make_server(root=ROOT, port=8768, manager=None):
                         return self.send(rows)
                 if len(parts) == 4 and parts[0] == 'files':
                     target = manager.result_path(parts[1], parts[2], parts[3])
-                elif path in ('/', '/app.js', '/style.css', '/triage.css'):
-                    target = Path(root) / 'local_panel/static' / ('index.html' if path == '/' else path[1:])
+                elif path in ('/', '/control', '/app.js', '/home.js', '/style.css', '/triage.css', '/home.css'):
+                    page = {'/': 'home.html', '/control': 'index.html'}.get(path, path[1:])
+                    target = Path(root) / 'local_panel/static' / page
                 else:
                     return self.send({'error': 'No encontrado'}, 404)
                 return self.send(target.read_bytes(), mime=mimetypes.guess_type(target.name)[0] or 'application/octet-stream')
@@ -107,6 +110,8 @@ def make_server(root=ROOT, port=8768, manager=None):
                     return self.send(manager.start_discovery(), 202)
                 if path == '/api/discovery/replenish':
                     return self.send(manager.replenish_discovery(), 201)
+                if path == '/api/watch':
+                    return self.send(manager.watch(data.get('kic'), data.get('action'), data.get('note')))
                 if path == '/api/cluster/settings':
                     if not manager.cluster:
                         raise ValueError('Modo red desactivado')

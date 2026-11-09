@@ -50,6 +50,8 @@ def folded(curve, candidate, row, path, kic):
         ax.set(xlabel='Horas desde el centro del tránsito', ylabel='Flujo relativo (ppm)', xlim=(-24 * span, 24 * span))
         ax.legend(fontsize=8)
     rf = row.get('rf_probability', np.nan)
-    fig.suptitle(f'KIC {kic} | Period = {candidate.period:.6f} d | Depth = {row["depth_ppm"]:.0f} ppm\n'
-                 f'SNR = {row["depth_snr"]:.1f} | RF = {rf:.3f} | Known KOI = {row.get("known_koi", False)}')
+    name = kic if isinstance(kic, str) else f'KIC {kic}'
+    known = row.get('known_koi', False) if 'mission' not in row else 'n/a'
+    fig.suptitle(f'{name} | Period = {candidate.period:.6f} d | Depth = {row["depth_ppm"]:.0f} ppm\n'
+                 f'SNR = {row["depth_snr"]:.1f} | RF = {rf:.3f} | Known KOI = {known}')
     save(fig, path)

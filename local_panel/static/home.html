@@ -3,34 +3,39 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Kepler · Resumen</title>
+  <title>Sakanet · Estrellas a seguir</title>
   <link rel="stylesheet" href="/style.css">
   <link rel="stylesheet" href="/home.css">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <script src="/sky.js" defer></script>
   <script src="/home.js" defer></script>
 </head>
 <body>
-<header><a class="brand" href="/">KEPLER <span>OBSERVATORY</span></a><nav class="topnav"><a href="/" class="active">Resumen</a><a href="/control">Control de análisis</a></nav><div class="mode-switch" role="group" aria-label="Misión"><button type="button" data-mission="kepler">Kepler</button><button type="button" data-mission="tess">TESS</button></div><span class="badge" id="status-badge">● CARGANDO</span></header>
+<header><a class="brand" href="/" aria-label="Sakanet, inicio"><svg viewBox="0 0 34 22" aria-hidden="true"><path d="M1 7h11c2 0 2.5 9 5 9s3-9 5-9h11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="17" cy="16" r="2.4" fill="var(--accent)"/></svg>SAKANET <span>observatorio de tránsitos</span></a><nav class="topnav"><a href="/" class="active">Resumen</a><a href="/control">Control de análisis</a></nav><div class="mode-switch" role="group" aria-label="Misión"><button type="button" data-mission="kepler">Kepler</button><button type="button" data-mission="tess">TESS</button></div><span class="badge" id="status-badge">Conectando…</span></header>
 <main>
-  <section class="intro home-intro">
-    <div>
-      <p class="eyebrow" id="home-eyebrow">RESUMEN DEL OBSERVATORIO</p>
-      <h1>Estrellas a <em>seguir</em></h1>
-      <p class="muted">Lo más interesante de todo lo analizado, en todos los lotes y equipos. Es una selección para revisar a mano, no una confirmación de planetas.</p>
+  <section class="hero">
+    <div class="hero-text">
+      <p class="eyebrow" id="home-eyebrow">Resumen del observatorio</p>
+      <h1>Estrellas a seguir</h1>
+      <p class="lede">Cuando un planeta pasa por delante de su estrella, la luz baja un poco. Sakanet busca esa caída en miles de estrellas y te deja aquí las que merecen una segunda mirada.</p>
+      <div class="readout" id="kpis" aria-live="polite"></div>
     </div>
+    <figure class="hero-art">
+      <canvas id="transit" aria-label="Animación: un planeta cruza su estrella y la curva de luz registra la caída"></canvas>
+      <figcaption>Un tránsito: la curva de luz cae mientras el planeta tapa parte de la estrella.</figcaption>
+    </figure>
   </section>
   <p id="message" role="status"></p>
-
-  <section class="kpis" id="kpis"></section>
   <p class="banner" id="no-model" hidden></p>
 
   <section class="card">
-    <div class="row"><div><p class="eyebrow">PRIORITARIAS</p><h2>Señales serias</h2></div><span class="muted small" id="priority-count"></span></div>
+    <div class="row"><div><h2>Señales serias</h2></div><span class="muted small" id="priority-count"></span></div>
     <p class="muted small">RF ≥ 0,65, CNN ≥ 0,60, prioridad ≥ 35, SNR ≥ 10, al menos 3 tránsitos consistentes y ninguna alerta grave.</p>
     <div class="cards" id="priority"></div>
   </section>
 
   <section class="card">
-    <div class="row"><div><p class="eyebrow">MI SEGUIMIENTO</p><h2>Estrellas marcadas</h2></div></div>
+    <div class="row"><div><h2>Tu seguimiento</h2></div></div>
     <form id="watch-form" class="watch-form">
       <input id="watch-kic" inputmode="numeric" placeholder="KIC" aria-label="Estrella a seguir">
       <input id="watch-note" placeholder="Nota (opcional): por qué la sigues" aria-label="Nota">
@@ -40,13 +45,13 @@
   </section>
 
   <section class="card">
-    <div class="row"><div><p class="eyebrow">A REVISAR</p><h2>Señales moderadas</h2></div><span class="muted small" id="review-count"></span></div>
+    <div class="row"><div><h2>Para revisar</h2></div><span class="muted small" id="review-count"></span></div>
     <p class="muted small">Sin alertas graves y con al menos 3 tránsitos, pero por debajo de los umbrales de "prioritario". Merecen un vistazo.</p>
     <div class="cards" id="review"></div>
     <button class="secondary more" id="review-more" hidden>Ver más</button>
   </section>
 
-  <footer>Se actualiza cada 20 s · Datos guardados en este PC · <a href="/control">Ir al control de análisis →</a></footer>
+  <footer>Se actualiza cada 20 segundos. Los datos se guardan en este PC. <a href="/control">Ir al control de análisis</a></footer>
 </main>
 </body>
 </html>

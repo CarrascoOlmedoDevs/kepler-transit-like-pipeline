@@ -170,7 +170,8 @@ function renderCluster(cluster) {
   $('cluster-on').hidden = !clusterEnabled;
   $('distributed-label').hidden = !clusterEnabled;
   $('train-card').hidden = !clusterEnabled || mission !== 'kepler';
-  $('mode-badge').textContent = clusterEnabled ? '● RED LOCAL ACTIVA' : '● SOLO EN ESTE ORDENADOR';
+  $('mode-badge').textContent = clusterEnabled ? 'Red local activa' : 'Solo este PC';
+  $('mode-badge').classList.toggle('live', clusterEnabled);
   if (!clusterEnabled) return;
   const addresses = (cluster.addresses.length ? cluster.addresses : ['IP-de-este-PC']).map(a => `${a}:${cluster.port}`);
   $('cluster-address').textContent = addresses.join('  ·  ');
@@ -190,7 +191,7 @@ function renderCluster(cluster) {
 }
 
 function renderDiscovery(discovery, cnnRunning) {
-  $('discovery-eyebrow').textContent = mission === 'tess' ? 'DESCUBRIMIENTO TESS · 2 MIN SIN TOI' : 'DESCUBRIMIENTO KEPLER';
+  $('discovery-eyebrow').textContent = mission === 'tess' ? 'Descubrimiento TESS: estrellas de 2 min sin TOI' : 'Descubrimiento Kepler';
   const active = discovery.enabled;
   const next = discovery.next_batch || 1;
   const total = discovery.total_batches || 25;

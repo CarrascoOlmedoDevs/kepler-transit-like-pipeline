@@ -119,15 +119,16 @@ function render(data) {
   lastOverview = data;
   const watched = new Set(data.watchlist.map(w => Number(w.kic)));
   const labels = data.labels || {};
-  $('status-badge').textContent = data.helpers ? `● ${data.helpers_online}/${data.helpers} EQUIPOS CONECTADOS` : '● SOLO ESTE PC';
+  $('status-badge').textContent = data.helpers ? `${data.helpers_online} de ${data.helpers} equipos conectados` : 'Solo este PC';
+  $('status-badge').classList.toggle('live', data.helpers_online > 0);
+  const n = value => Number(value || 0).toLocaleString('es-ES');
   $('kpis').replaceChildren(
-    kpi(data.stars, 'estrellas analizadas'),
-    kpi(data.candidates, 'señales detectadas'),
-    kpi(labels.prioritario || 0, 'prioritarias'),
-    kpi(labels.revisar || 0, 'a revisar'),
-    kpi(data.watchlist.length, 'en seguimiento'),
-    kpi(data.model ? 'AUC ' + Number(data.model.roc_auc).toFixed(2) : 'sin modelo', 'modelo RF (Kepler)',
-        data.model ? (mission === 'tess' ? 'orientativo en TESS' : `acierto ${Math.round(data.model.accuracy * 100)} % en test`) : 'entrénalo desde Control'),
+    kpi(n(data.stars), 'estrellas analizadas'),
+    kpi(n(data.candidates), 'señales detectadas'),
+    kpi(n(labels.prioritario), 'serias'),
+    kpi(n(labels.revisar), 'para revisar'),
+    kpi(data.model ? Number(data.model.roc_auc).toLocaleString('es-ES', {maximumFractionDigits: 2}) : '—',
+        data.model ? (mission === 'tess' ? 'AUC del modelo (orientativo en TESS)' : 'AUC del modelo RF') : 'modelo sin entrenar'),
   );
   $('no-model').hidden = !data.without_model;
   $('no-model').textContent = data.without_model
@@ -185,7 +186,7 @@ $('watch-form').onsubmit = async event => {
 $('review-more').onclick = () => { reviewLimit += 12; render(lastOverview); };
 
 loadMode().then(() => {
-  $('home-eyebrow').textContent = mission === 'tess' ? 'RESUMEN DEL OBSERVATORIO · TESS' : 'RESUMEN DEL OBSERVATORIO · KEPLER';
+  $('home-eyebrow').textContent = mission === 'tess' ? 'Resumen del observatorio en TESS' : 'Resumen del observatorio en Kepler';
   $('watch-kic').placeholder = PREFIX[mission];
   if (mission === 'tess') document.querySelector('#priority').closest('.card').querySelector('p.muted').textContent =
     'En TESS el modelo es el de Kepler (no calibrado): ninguna señal sale como prioritaria sin revisión. Mira "A revisar".';

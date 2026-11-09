@@ -7,12 +7,16 @@ import csv
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import mimetypes
+import re
 from pathlib import Path
 import secrets
 import threading
 from urllib.parse import urlsplit
 import webbrowser
 from local_panel.jobs import Manager
+
+mimetypes.add_type('font/woff2', '.woff2')
+mimetypes.add_type('image/svg+xml', '.svg')
 
 ROOT = Path(__file__).resolve().parent
 
@@ -79,7 +83,8 @@ def make_server(root=ROOT, port=8768, manager=None):
                         return self.send(rows)
                 if len(parts) == 4 and parts[0] == 'files':
                     target = manager.result_path(parts[1], parts[2], parts[3])
-                elif path in ('/', '/control', '/app.js', '/home.js', '/style.css', '/triage.css', '/home.css'):
+                elif path in ('/', '/control', '/app.js', '/home.js', '/sky.js', '/style.css', '/triage.css',
+                              '/home.css', '/favicon.svg') or re.fullmatch(r'/fonts/[a-z0-9-]+\.woff2', path):
                     page = {'/': 'home.html', '/control': 'index.html'}.get(path, path[1:])
                     target = Path(root) / 'local_panel/static' / page
                 else:

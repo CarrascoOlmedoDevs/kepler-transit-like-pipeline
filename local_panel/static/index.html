@@ -9,13 +9,24 @@
   <script src="/app.js" defer></script>
 </head>
 <body>
-<header><a class="brand" href="/">KEPLER <span>OBSERVATORY</span></a><span class="badge">● SOLO EN ESTE ORDENADOR</span></header>
+<header><a class="brand" href="/">KEPLER <span>OBSERVATORY</span></a><span class="badge" id="mode-badge">● SOLO EN ESTE ORDENADOR</span></header>
 <main>
   <div class="intro"><div><p class="eyebrow">CENTRO DE OPERACIONES</p><h1>Control de análisis</h1><p class="muted">Curvas, colas y resultados en este ordenador. Parámetros científicos sin cambios.</p></div></div>
   <p id="message" role="status" aria-live="polite"></p>
   <div class="layout">
     <aside>
-      <section class="card"><h2>Nuevo análisis</h2><form id="create"><label for="kics">Identificadores KIC</label><textarea id="kics" placeholder="10854555, 757450" required></textarea><p class="muted small">Uno o varios KIC, separados por espacios o comas. Se utiliza la configuración actual del scanner.</p><button type="submit" id="start">＋ Iniciar análisis</button></form></section>
+      <section class="card"><h2>Nuevo análisis</h2><form id="create"><label for="kics">Identificadores KIC</label><textarea id="kics" placeholder="10854555, 757450" required></textarea><p class="muted small">Uno o varios KIC, separados por espacios o comas. Se utiliza la configuración actual del scanner.</p><label class="check" id="distributed-label" hidden><input type="checkbox" id="distributed"> Repartir entre los equipos de la red</label><button type="submit" id="start">＋ Iniciar análisis</button></form></section>
+      <section class="card" id="cluster-card">
+        <p class="eyebrow">RED LOCAL</p><h2>Equipos ayudantes</h2>
+        <p id="cluster-off" class="muted small">Desactivado. Abre el panel con <b>ABRIR_PANEL_RED.bat</b> para que otros PCs de tu red ayuden.</p>
+        <div id="cluster-on" hidden>
+          <p class="muted small">En el otro PC: copia la carpeta de Sakanet y ejecuta <b>AYUDAR.bat</b>. Te pedirá:</p>
+          <p class="small">Dirección: <code id="cluster-address"></code><br>Token: <code id="cluster-token"></code></p>
+          <label class="check"><input type="checkbox" id="cluster-discovery"> Repartir también el descubrimiento automático</label>
+          <div id="cluster-helpers" class="small"></div>
+          <div class="actions"><button id="cluster-newtoken" class="secondary">Cambiar token</button></div>
+        </div>
+      </section>
       <section class="card">
         <p class="eyebrow">DESCUBRIMIENTO</p><h2>25 lotes de 10</h2>
         <p id="discovery-note" class="muted small">Preparado para continuar lote a lote.</p>
@@ -53,7 +64,7 @@
       <section class="card"><div class="row"><h2>Registro de ejecución</h2><span class="muted small">Actualización cada 3 s</span></div><pre id="log">Sin actividad.</pre></section>
     </div>
   </div>
-  <footer>Datos y progreso guardados en tu PC · Sin acceso remoto · Las señales unmatched requieren estudio.</footer>
+  <footer>Datos y progreso guardados en tu PC · Panel solo local; los ayudantes de red usan un servidor aparte con token · Las señales unmatched requieren estudio.</footer>
 </main>
 </body>
 </html>

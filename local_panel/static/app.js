@@ -79,6 +79,31 @@ async function results(state) {
   }
 }
 
+let clusterEnabled = false;
+function renderCluster(cluster) {
+  clusterEnabled = !!cluster.enabled;
+  $('cluster-off').hidden = clusterEnabled;
+  $('cluster-on').hidden = !clusterEnabled;
+  $('distributed-label').hidden = !clusterEnabled;
+  $('mode-badge').textContent = clusterEnabled ? '● RED LOCAL ACTIVA' : '● SOLO EN ESTE ORDENADOR';
+  if (!clusterEnabled) return;
+  const addresses = (cluster.addresses.length ? cluster.addresses : ['IP-de-este-PC']).map(a => `${a}:${cluster.port}`);
+  $('cluster-address').textContent = addresses.join('  ·  ');
+  $('cluster-token').textContent = cluster.token;
+  $('cluster-discovery').checked = cluster.distribute_discovery;
+  $('cluster-helpers').replaceChildren();
+  if (!cluster.helpers.length) $('cluster-helpers').append(node('p', 'Ningún equipo conectado todavía.'));
+  for (const helper of cluster.helpers) {
+    const row = node('div', '');
+    row.className = 'helper';
+    const name = node('span', `${helper.online ? '🟢' : '⚪'} ${helper.name}`);
+    if (!helper.online) name.className = 'off';
+    const current = helper.current ? 'KIC ' + helper.current.split(':')[1] : (helper.online ? 'esperando' : 'desconectado');
+    row.append(name, node('span', `${current} · ${helper.completed} hechas${helper.failed ? ` · ${helper.failed} fallos` : ''}`));
+    $('cluster-helpers').append(row);
+  }
+}
+
 function renderDiscovery(discovery, cnnRunning) {
   const active = discovery.enabled;
   const next = discovery.next_batch || 1;
@@ -137,7 +162,9 @@ async function refresh() {
     const jobs = snapshot.jobs;
     const cnn = await api('/api/cnn');
     const discovery = await api('/api/discovery');
-    const scanRunning = jobs.some(job => ['running', 'pausing', 'stopping'].includes(job.status));
+    renderCluster(await api('/api/cluster').catch(() => ({enabled: false})));
+    // Los repartos no ocupan este PC: no bloquean un análisis local.
+    const scanRunning = jobs.some(job => job.kind !== 'cluster' && ['running', 'pausing', 'stopping'].includes(job.status));
     renderCnn(cnn, scanRunning);
     renderDiscovery(discovery, cnn.status === 'running');
     if ((!selected || !jobs.some(job => job.id === selected)) && jobs.length) {
@@ -152,7 +179,7 @@ async function refresh() {
       button.onclick = () => { selected = job.id; resultKey = ''; refresh(); };
       $('jobs').append(button);
     }
-    $('start').disabled = scanRunning || cnn.status === 'running';
+    $('start').disabled = ($('distributed').checked && clusterEnabled) ? false : (scanRunning || cnn.status === 'running');
     if (!selected) {
       $('title').textContent = 'Crea tu primera cola';
       ['resume', 'pause', 'stop'].forEach(id => $(id).disabled = true);
@@ -164,12 +191,15 @@ async function refresh() {
     $('status').textContent = state.requested_action === 'pause' && state.status === 'running' ? 'Pausa solicitada' : labels[state.status] || state.status;
     $('done').textContent = done;
     $('total').textContent = state.ids.length;
-    $('current').textContent = state.current || '—';
+    $('current').textContent = state.kind === 'cluster' && typeof state.current === 'number' && !state.ids.includes(state.current)
+      ? `${state.current} a la vez` : (state.current || '—');
     $('serious').textContent = state.triage?.serious_count || 0;
     $('progress').max = state.ids.length;
     $('progress').value = done;
-    $('note').textContent = state.error || (state.kind === 'blind' ? 'Cohorte TEST congelada. El control KIC 10854555 se ejecutará aparte, al terminar.' : 'Una estrella cada vez · Caché de curvas reutilizada · Configuración científica sin cambios.');
-    $('resume').disabled = scanRunning || cnn.status === 'running' || state.status === 'completed';
+    $('note').textContent = state.error || (state.kind === 'cluster' ? 'Reparto entre equipos de la red · cada estrella la analiza un ayudante y el coordinador valida el resultado.' : state.kind === 'blind' ? 'Cohorte TEST congelada. El control KIC 10854555 se ejecutará aparte, al terminar.' : 'Una estrella cada vez · Caché de curvas reutilizada · Configuración científica sin cambios.');
+    $('resume').disabled = state.kind === 'cluster'
+      ? (!clusterEnabled || ['running', 'completed'].includes(state.status))
+      : (scanRunning || cnn.status === 'running' || state.status === 'completed');
     $('pause').disabled = state.status !== 'running' || state.requested_action === 'pause';
     $('stop').disabled = state.status !== 'running';
     $('log').textContent = state.log || 'Sin actividad. No se ha iniciado ningún análisis desde el panel.';
@@ -179,7 +209,8 @@ async function refresh() {
     ids.sort((a, b) => (state.stars[b] === 'complete') - (state.stars[a] === 'complete'));
     const seriousKics = new Set((state.triage?.serious || []).map(item => Number(item.kic)));
     for (const kic of ids) {
-      const option = node('option', `${seriousKics.has(Number(kic)) ? '✦ ' : ''}KIC ${kic} · ${labels[state.stars[kic]] || state.stars[kic]}${kic === state.control ? ' (control)' : ''}`);
+      const who = (state.assigned || {})[kic] || (state.done_by || {})[kic];
+      const option = node('option', `${seriousKics.has(Number(kic)) ? '✦ ' : ''}KIC ${kic} · ${labels[state.stars[kic]] || state.stars[kic]}${who ? ' · ' + who : ''}${kic === state.control ? ' (control)' : ''}`);
       option.value = kic;
       $('stars').append(option);
     }
@@ -196,9 +227,10 @@ async function refresh() {
 $('create').onsubmit = async event => {
   event.preventDefault();
   try {
-    const job = await api('/api/jobs', {kics: $('kics').value});
+    const distributed = clusterEnabled && $('distributed').checked;
+    const job = await api('/api/jobs', {kics: $('kics').value, distributed});
     selected = job.id;
-    msg('Análisis iniciado.');
+    msg(distributed ? 'Reparto creado: los equipos conectados empezarán a pedir estrellas.' : 'Análisis iniciado.');
     await refresh();
   } catch (error) { msg(error.message); }
 };
@@ -230,6 +262,18 @@ $('discovery-add').onclick = async () => {
   } finally {
     $('discovery-add').disabled = false;
   }
+};
+
+$('distributed').onchange = () => refresh();
+$('cluster-discovery').onchange = async () => {
+  try {
+    await api('/api/cluster/settings', {distribute_discovery: $('cluster-discovery').checked});
+    msg($('cluster-discovery').checked ? 'Los próximos lotes de descubrimiento se repartirán entre los equipos.' : 'Los próximos lotes se analizarán en este PC.');
+  } catch (error) { msg(error.message); }
+};
+$('cluster-newtoken').onclick = async () => {
+  if (!confirm('¿Cambiar el token? Los ayudantes tendrán que reconfigurarse (AYUDAR.bat reconfigurar).')) return;
+  try { await api('/api/cluster/token', {}); msg('Token cambiado.'); await refresh(); } catch (error) { msg(error.message); }
 };
 
 for (const action of ['resume', 'pause', 'stop']) $('' + action).onclick = async () => {

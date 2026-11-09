@@ -6,3 +6,9 @@
 .triage-revisar .triage-badge{color:#ffd37a;border-color:#866b35}
 .triage-descartable{opacity:.72}
 .triage-descartable .triage-badge,.triage-débil .triage-badge,.triage-debil .triage-badge{color:var(--muted)}
+
+.check{display:flex;gap:.5em;align-items:center;margin:.5em 0;font-size:.9em}
+.check input{width:auto;margin:0}
+#cluster-card code{user-select:all;word-break:break-all}
+.helper{display:flex;justify-content:space-between;padding:.3em 0;border-top:1px solid rgba(127,127,127,.2)}
+.helper .off{opacity:.5}

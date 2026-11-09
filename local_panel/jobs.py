@@ -102,10 +102,26 @@ class Manager:
         self.active = None
         self.log_stream = None
         self.launcher = launcher or subprocess.Popen
+        self.cluster = None  # local_panel.cluster.Cluster cuando el panel se abre con --lan
         self.import_blind()
         self.ensure_cnn_state()
         for path in self.folder.glob('*/state.json'):
             state = read(path)
+            if state.get('kind') == 'cluster':
+                # Los alquileres de ayudantes no sobreviven al reinicio: devolver a la cola.
+                changed = False
+                for kic, value in state['stars'].items():
+                    if value == 'running':
+                        state['stars'][kic] = 'pending'
+                        changed = True
+                if state['status'] == 'running':
+                    state.update(status='paused', error='Panel reiniciado; reanuda el reparto explícitamente.')
+                    changed = True
+                state.pop('assigned', None)
+                state['current'] = None
+                if changed:
+                    write(path, state)
+                continue
             if state['status'] in ACTIVE:
                 if alive(state.get('pid')):
                     raise RuntimeError('Hay un trabajador anterior activo. No se iniciará un segundo panel.')
@@ -206,6 +222,12 @@ class Manager:
             self.refresh()
             files = self._batch_files()
             waiting = self.active if self.process and self.active != 'cnn' else None
+            if waiting is None:  # Un lote repartido en curso cuenta como análisis activo.
+                for path in self.folder.glob('*/state.json'):
+                    other = read(path, {})
+                    if other.get('kind') == 'cluster' and other.get('batch_index') and \
+                            other.get('status') in ('running', 'paused'):
+                        waiting = other['id']
             next_batch = 1
             if waiting:
                 current = read(self.jobdir(waiting) / 'state.json')
@@ -293,10 +315,16 @@ class Manager:
                      ids=ids, stars={str(k): 'pending' for k in ids}, status='paused',
                      current=None, pid=None, error=None, created=time.time(),
                      batch_index=number, batch_total=len(files))
+        distributed = bool(self.cluster and self.cluster.server and
+                           self.cluster.settings.get('distribute_discovery'))
+        if distributed:
+            state.update(kind='cluster', mission='kepler', status='running',
+                         name=f'Descubrimiento repartido - lote {number:02d}/{len(files):02d}')
         write(self.folder / job / 'state.json', state)
         automation.update(status='launching', waiting_job=job, next_batch=number + 1)
         write(self.folder / 'discovery_automation.json', automation)
-        self._launch(job, state)
+        if not distributed:
+            self._launch(job, state)
         from kepler_detector.catalog import update_discovery_batch_status
         update_discovery_batch_status(self.root, number, 'running', 0)
         automation['status'] = 'running'
@@ -410,10 +438,19 @@ class Manager:
             write(self.folder / 'cnn/state.json', state)
             self.refresh()
 
-    def create(self, value):
+    def create(self, value, distributed=False):
         ids = parse_kics(value)
         with self.lock:
             self.refresh()
+            if distributed:
+                if not self.cluster or not self.cluster.server:
+                    raise ValueError('Abre el panel en modo red (ABRIR_PANEL_RED.bat) para repartir.')
+                job = secrets.token_hex(8)
+                write(self.folder / job / 'state.json', dict(
+                    id=job, kind='cluster', name=f'Reparto de {len(ids)} estrella(s)', mission='kepler',
+                    ids=ids, stars={str(k): 'pending' for k in ids}, status='running', current=None,
+                    pid=None, error=None, created=time.time()))
+                return job
             if self.process:
                 raise ValueError('Ya hay un análisis activo; páusalo o detenlo primero.')
             job = secrets.token_hex(8)
@@ -446,6 +483,10 @@ class Manager:
             self.refresh()
             folder = self.jobdir(job)
             state = read(folder / 'state.json')
+            if state.get('kind') == 'cluster':
+                if not self.cluster or (action == 'resume' and not self.cluster.server):
+                    raise ValueError('Abre el panel en modo red (ABRIR_PANEL_RED.bat) para gestionar repartos.')
+                return self.cluster.action(job, action)
             if action == 'resume':
                 if self.process or state['status'] in ACTIVE or state['status'] == 'completed':
                     raise ValueError('No se puede iniciar este trabajo en su estado actual.')
@@ -468,6 +509,14 @@ class Manager:
                 self.refresh()
             else:
                 raise ValueError('Acción desconocida')
+
+    def cluster_job_finished(self, state):
+        """Llamado por el coordinador (con el cerrojo tomado) al terminar un reparto."""
+        if state.get('batch_index'):
+            from kepler_detector.catalog import update_discovery_batch_status
+            completed = sum(value == 'complete' for value in state.get('stars', {}).values())
+            update_discovery_batch_status(self.root, state['batch_index'], state['status'], completed)
+        self._advance_discovery()
 
     def close(self):
         with self.lock:

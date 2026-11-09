@@ -1,4 +1,7 @@
-"""Loopback-only control panel. Starting this server never starts a scan."""
+"""Loopback-only control panel. Starting this server never starts a scan.
+
+Con --lan se abre además un servidor aparte para equipos ayudantes de la red local
+(local_panel/cluster.py, protegido por token). El panel en sí sigue siendo sólo local."""
 import argparse
 import csv
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -58,6 +61,8 @@ def make_server(root=ROOT, port=8768, manager=None):
                     return self.send(manager.cnn_details())
                 if path == '/api/discovery':
                     return self.send(manager.discovery_details())
+                if path == '/api/cluster':
+                    return self.send(manager.cluster.details() if manager.cluster else {'enabled': False})
                 if len(parts) == 3 and parts[:2] == ['api', 'jobs']:
                     return self.send(manager.details(parts[2]))
                 if len(parts) == 4 and parts[:2] == ['api', 'results']:
@@ -90,7 +95,7 @@ def make_server(root=ROOT, port=8768, manager=None):
                     raise ValueError('Se esperaba un objeto JSON')
                 path = urlsplit(self.path).path
                 if path == '/api/jobs':
-                    job = manager.create(data.get('kics'))
+                    job = manager.create(data.get('kics'), data.get('distributed') is True)
                     return self.send({'id': job}, 201)
                 if path == '/api/cnn/start':
                     manager.start_cnn(data.get('operation'), data.get('options'))
@@ -102,6 +107,14 @@ def make_server(root=ROOT, port=8768, manager=None):
                     return self.send(manager.start_discovery(), 202)
                 if path == '/api/discovery/replenish':
                     return self.send(manager.replenish_discovery(), 201)
+                if path == '/api/cluster/settings':
+                    if not manager.cluster:
+                        raise ValueError('Modo red desactivado')
+                    return self.send(manager.cluster.set_distribute_discovery(data.get('distribute_discovery') is True))
+                if path == '/api/cluster/token':
+                    if not manager.cluster:
+                        raise ValueError('Modo red desactivado')
+                    return self.send(manager.cluster.new_token())
                 if path == '/api/discovery/stop':
                     manager.stop_discovery()
                     return self.send({'ok': True})
@@ -123,10 +136,32 @@ def make_server(root=ROOT, port=8768, manager=None):
     return server
 
 
+def start_local_helper(cluster, workers):
+    """Ayudante en este mismo PC, con su propia carpeta de trabajo."""
+    import os
+    import socket
+    import subprocess
+    import sys
+    log = (ROOT / 'results/local_panel/ayudante_local.log').open('ab', buffering=0)
+    return subprocess.Popen(
+        [sys.executable, '-u', str(ROOT / 'ayudante.py'), '--server', f'http://127.0.0.1:{cluster.port}',
+         '--token', cluster.token, '--name', f'{socket.gethostname()} (este PC)', '--workers', str(workers),
+         '--root', str(ROOT / 'ayudante_local'), '--settings', str(ROOT / 'results/local_panel/ayudante_local.json'),
+         '--parent', str(os.getpid())],
+        cwd=str(ROOT), stdout=log, stderr=subprocess.STDOUT,
+        env={**os.environ, 'PYTHONIOENCODING': 'utf-8'},
+        creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0,
+        start_new_session=os.name != 'nt')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--port', type=int, default=8768)
     parser.add_argument('--open', action='store_true')
+    parser.add_argument('--lan', action='store_true', help='Aceptar equipos ayudantes de la red local')
+    parser.add_argument('--lan-port', type=int, default=8769)
+    parser.add_argument('--local-workers', type=int, default=1,
+                        help='Con --lan: estrellas que analiza también este PC (0 = sólo coordinar)')
     args = parser.parse_args()
     url = f'http://127.0.0.1:{args.port}'
     try:
@@ -137,15 +172,44 @@ def main():
         with urlopen(url + '/api/state', timeout=3) as response:
             if json.load(response).get('application') != 'kepler-local-panel':
                 raise RuntimeError('El puerto está ocupado por otra aplicación')
+        if args.lan:
+            from urllib.request import urlopen as _open
+            try:
+                with _open(url + '/api/cluster', timeout=3) as response:
+                    enabled = json.load(response).get('enabled')
+            except OSError:
+                enabled = False  # Panel de una versión anterior, sin modo red.
+            if not enabled:
+                raise SystemExit('El panel ya está abierto sin modo red. Ciérralo y vuelve a abrir '
+                                 'ABRIR_PANEL_RED.bat (que lo cierra solo).')
         if args.open:
             webbrowser.open(url)
         return
     if args.open:
         threading.Timer(.5, lambda: webbrowser.open(url)).start()
     print('Panel local: ' + url + ' — análisis pausados hasta acción explícita.', flush=True)
+    if args.lan:
+        from local_panel.cluster import Cluster, lan_addresses
+        cluster = Cluster(server.manager, args.lan_port)
+        cluster.start()
+        for address in lan_addresses() or ['<IP de este PC>']:
+            print(f'Ayudantes: http://{address}:{args.lan_port}  token: {cluster.token}', flush=True)
+        if args.local_workers > 0:
+            local_helper = start_local_helper(cluster, args.local_workers)
+            server.local_helper = local_helper
+            print(f'Este PC también analiza ({args.local_workers} a la vez).', flush=True)
     try:
         server.serve_forever()
     finally:
+        helper = getattr(server, 'local_helper', None)
+        if helper and helper.poll() is None:
+            from local_panel.jobs import stop_process
+            try:
+                stop_process(helper)
+            except Exception:
+                pass
+        if server.manager.cluster:
+            server.manager.cluster.stop()
         server.manager.close()
         server.server_close()
 

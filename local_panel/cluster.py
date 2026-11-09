@@ -49,6 +49,10 @@ def lan_addresses():
     return sorted(a for a in found if not a.startswith('127.'))
 
 
+class SignatureChanged(ValueError):
+    pass
+
+
 class Cluster:
     def __init__(self, manager, port=DEFAULT_PORT, host='0.0.0.0', lease_seconds=LEASE_SECONDS):
         self.manager = manager
@@ -168,13 +172,15 @@ class Cluster:
         state['current'] = int(running[0]) if len(running) == 1 else (len(running) or None)
 
     # ------------------------------------------------------------------ protocolo
-    def claim(self, helper, name, address=None):
+    def claim(self, helper, name, address=None, caps=()):
         with self.lock:
             self._expire()
             self._touch(helper, name, address)
             for state in self._jobs():
                 if state['status'] != 'running':
                     continue
+                if state.get('task') == 'build' and 'build' not in caps:
+                    continue  # Ayudante de una versión anterior: sólo recibe análisis normales.
                 for kic in map(str, state['ids']):
                     if state['stars'][kic] != 'pending':
                         continue
@@ -187,6 +193,10 @@ class Cluster:
                     self.helpers[helper]['current'] = f"{state['id']}:{kic}"
                     self._log(state['id'], f"{self.helpers[helper]['name']}: INICIO KIC {kic}")
                     mission = state.get('mission', 'kepler')
+                    if state.get('task') == 'build':
+                        from local_panel import training
+                        return dict(job=state['id'], kic=int(kic), mission=mission,
+                                    lease_seconds=self.lease_seconds, **training.task_for(state, kic))
                     return dict(job=state['id'], kic=int(kic), mission=mission,
                                 no_model=self.no_model(), signature=self.expected_signature(mission),
                                 lease_seconds=self.lease_seconds)
@@ -250,7 +260,17 @@ class Cluster:
             state = self._owned_state(helper, job, kic)
             mission = state.get('mission', 'kepler')
             files = self._unpack(payload)
-            self._validate(files, int(kic), self.expected_signature(mission))
+            try:
+                self._validate(files, int(kic), self.expected_signature(mission))
+            except SignatureChanged as error:
+                # Modelo nuevo durante el análisis: la estrella vuelve a la cola y el ayudante se resincroniza.
+                self.leases.pop((job, kic), None)
+                state['stars'][kic] = 'pending'
+                state.get('assigned', {}).pop(kic, None)
+                self._refresh_current(state)
+                self._save(state)
+                self._log(job, f'KIC {kic}: resultado con modelos antiguos, vuelve a la cola')
+                raise LookupError(str(error)) from None
             folder = self.manager.folder / job / 'workspace/results' / f'KIC_{int(kic)}'
             if folder.exists():
                 history = self.manager.folder / job / 'history' / f'{kic}-{time.time_ns()}'
@@ -275,6 +295,32 @@ class Cluster:
                 record_serious_evidence(self.root, job, int(kic), folder)
             except Exception as error:  # El resultado científico sigue siendo válido.
                 self._log(job, f'AVISO informe de evidencias KIC {kic}: {error}')
+            self._finish_if_done(state)
+            return dict(ok=True)
+
+    def submit_build(self, helper, job, kic, results, name=None):
+        kic = str(kic)
+        with self.lock:
+            self._expire()
+            state = self._owned_state(helper, job, kic)
+            if state.get('task') != 'build':
+                raise ValueError('Este trabajo no es de entrenamiento')
+            from local_panel import training
+            try:
+                training.accept(self.manager, state, kic, results)
+            except ValueError as error:
+                # Un resultado inválido cuenta como intento fallido: nunca un bucle de reasignaciones.
+                self._log(job, f'KIC {kic}: resultado de entrenamiento rechazado ({error})')
+                self.fail(helper, job, kic, f'Resultado rechazado: {error}')
+                raise LookupError(str(error)) from None
+            self.leases.pop((job, kic), None)
+            state['stars'][kic] = 'complete'
+            entry = self._touch(helper, name, current=None)
+            entry['completed'] += 1
+            state.setdefault('done_by', {})[kic] = entry['name']
+            state.get('assigned', {}).pop(kic, None)
+            good = sum(item['status'] == 'complete' for item in results)
+            self._log(job, f"{entry['name']}: FIN KIC {kic}: {good}/{len(results)} KOI medidos")
             self._finish_if_done(state)
             return dict(ok=True)
 
@@ -311,7 +357,7 @@ class Cluster:
         if meta.get('status') != 'complete' or meta.get('kic') != kic:
             raise ValueError('metadata.json no corresponde a un análisis completo de esta estrella')
         if meta.get('signature') != signature:
-            raise ValueError('Versión, configuración o modelos distintos a los del coordinador; '
+            raise SignatureChanged('Versión, configuración o modelos distintos a los del coordinador; '
                              'actualiza Sakanet en el equipo ayudante')
         rows = list(csv.DictReader(io.StringIO(files['candidates.csv'].decode('utf-8'))))
         if any(int(float(row.get('kepid', -1))) != kic for row in rows):
@@ -323,6 +369,11 @@ class Cluster:
         self._refresh_current(state)
         if state['status'] in ('running', 'paused') and all(
                 v in ('complete', 'failed') for v in state['stars'].values()):
+            if state.get('task') == 'build':
+                from local_panel import training
+                training.round_done(self, state)
+                self._save(state)
+                return
             state.update(status='completed', current=None)
             self._save(state)
             self._log(state['id'], 'Trabajo repartido terminado')
@@ -344,6 +395,8 @@ class Cluster:
                         state.get('attempts', {}).pop(kic, None)
                 state.update(status='running', error=None)
                 self._log(job, 'Reparto reanudado')
+                self._finish_if_done(state)  # Entrenamiento interrumpido con todo medido: rehacer el final.
+                return
             elif action == 'pause':
                 if state['status'] != 'running':
                     raise ValueError('Este reparto no está en ejecución.')
@@ -441,13 +494,17 @@ class Cluster:
                                                 self.headers.get('X-Kic', ''), self.body(MAX_UPLOAD),
                                                 self.headers.get('X-Name'))
                         return self.reply(result)
-                    data = json.loads(self.body(16384))
+                    data = json.loads(self.body(2 * 1024 * 1024 if path == '/cluster/v1/build_result' else 16384))
                     if not isinstance(data, dict):
                         raise ValueError('Se esperaba un objeto JSON')
                     helper = self.helper(data.get('helper'))
                     if path == '/cluster/v1/claim':
-                        task = cluster.claim(helper, data.get('name'), address)
+                        caps = data.get('caps') if isinstance(data.get('caps'), list) else []
+                        task = cluster.claim(helper, data.get('name'), address, caps)
                         return self.reply(task or {'task': None})
+                    if path == '/cluster/v1/build_result':
+                        return self.reply(cluster.submit_build(helper, str(data.get('job')), data.get('kic'),
+                                                               data.get('results'), data.get('name')))
                     if path == '/cluster/v1/heartbeat':
                         return self.reply(cluster.heartbeat(helper, str(data.get('job')), data.get('kic')))
                     if path == '/cluster/v1/fail':

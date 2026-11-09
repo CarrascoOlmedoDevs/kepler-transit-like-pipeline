@@ -12,3 +12,14 @@
 #cluster-card code{user-select:all;word-break:break-all}
 .helper{display:flex;justify-content:space-between;padding:.3em 0;border-top:1px solid rgba(127,127,127,.2)}
 .helper .off{opacity:.5}
+.curve-cell{min-width:260px}
+.curve-thumb{display:block;margin-bottom:4px}
+.curve-thumb img{display:block;width:260px;max-width:100%;height:auto;border-radius:6px;border:1px solid var(--edge);background:#fff;transition:transform .15s}
+.curve-thumb img:hover{transform:scale(1.03)}
+.curves{display:grid;gap:14px;margin-top:10px}
+.curve-figure{margin:0}
+.curve-figure img{display:block;width:100%;height:auto;border-radius:8px;border:1px solid var(--edge);background:#fff}
+.curve-figure figcaption{font-size:12px;color:var(--muted);margin-top:6px}
+#curves-extra{margin-top:14px}
+#curves-extra summary{cursor:pointer;font-size:13px;color:var(--muted)}
+#curves-extra-imgs{grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}

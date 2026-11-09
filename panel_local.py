@@ -115,6 +115,12 @@ def make_server(root=ROOT, port=8768, manager=None):
                     if not manager.cluster:
                         raise ValueError('Modo red desactivado')
                     return self.send(manager.cluster.new_token())
+                if path == '/api/train/start':
+                    if not manager.cluster or not manager.cluster.server:
+                        raise ValueError('Abre el panel en modo red (ABRIR_PANEL_RED.bat) para entrenar repartido.')
+                    from local_panel import training
+                    with manager.lock:
+                        return self.send({'id': training.create_job(manager, data.get('per_class'))}, 201)
                 if path == '/api/discovery/stop':
                     manager.stop_discovery()
                     return self.send({'ok': True})

@@ -16,6 +16,12 @@
   <div class="layout">
     <aside>
       <section class="card"><h2>Nuevo análisis</h2><form id="create"><label for="kics">Identificadores KIC</label><textarea id="kics" placeholder="10854555, 757450" required></textarea><p class="muted small">Uno o varios KIC, separados por espacios o comas. Se utiliza la configuración actual del scanner.</p><label class="check" id="distributed-label" hidden><input type="checkbox" id="distributed"> Repartir entre los equipos de la red</label><button type="submit" id="start">＋ Iniciar análisis</button></form></section>
+      <section class="card" id="train-card" hidden>
+        <p class="eyebrow">MODELO</p><h2>Entrenar RF repartido</h2>
+        <p class="muted small">Los equipos miden KOI conocidos (planetas candidatos y falsos positivos) y este PC entrena el modelo. Con 500 por clase son unas 800 estrellas.</p>
+        <label>Ejemplos por clase<input id="train-per-class" type="number" min="20" max="5000" value="500"></label>
+        <div class="actions"><button id="train-start">▶ Entrenar con los equipos</button></div>
+      </section>
       <section class="card" id="cluster-card">
         <p class="eyebrow">RED LOCAL</p><h2>Equipos ayudantes</h2>
         <p id="cluster-off" class="muted small">Desactivado. Abre el panel con <b>ABRIR_PANEL_RED.bat</b> para que otros PCs de tu red ayuden.</p>
@@ -41,6 +47,11 @@
         <div class="stats"><div><strong id="done">—</strong><span>completadas</span></div><div><strong id="total">—</strong><span>estrellas en la cola</span></div><div><strong id="current">—</strong><span>KIC en curso</span></div><div><strong id="serious">0</strong><span>señales prioritarias</span></div></div>
         <progress id="progress" value="0" max="1"></progress><p id="note" class="muted small"></p>
         <div class="actions"><button id="resume">▶ Continuar</button><button id="pause" class="secondary">Ⅱ Pausar</button><button id="stop" class="danger">■ Detener</button></div>
+      </section>
+      <section class="card" id="curves-card" hidden>
+        <div class="row"><div><p class="eyebrow">CURVAS DE LUZ</p><h2 id="curves-title">Curvas</h2></div></div>
+        <div id="curves" class="curves"></div>
+        <details id="curves-extra"><summary>Curva completa, curva sin tendencia y periodograma</summary><div id="curves-extra-imgs" class="curves"></div></details>
       </section>
       <section class="card">
         <div class="row"><h2>Resultados por estrella</h2><select id="stars" aria-label="Estrella"></select></div>

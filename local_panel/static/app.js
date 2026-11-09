@@ -3,7 +3,7 @@ let token = '', selected = null, busy = false, resultKey = '';
 const labels = {
   running: 'En ejecución', paused: 'Pausado', stopped: 'Detenido',
   completed: 'Finalizado', error: 'Error', ready: 'Preparado', pending: 'Pendiente',
-  complete: 'Completada', interrupted: 'Interrumpida', failed: 'Fallida'
+  complete: 'Completada', interrupted: 'Interrumpida', failed: 'Fallida', training: 'Entrenando'
 };
 
 async function api(path, data) {
@@ -27,6 +27,14 @@ async function results(state) {
   resultKey = key;
   $('results').replaceChildren();
   $('downloads').replaceChildren();
+  $('curves').replaceChildren();
+  $('curves-extra-imgs').replaceChildren();
+  $('curves-card').hidden = true;
+  if (state.task === 'build') {
+    const signals = (state.build?.signals || {})[kic] || [];
+    $('results').textContent = `Estrella de entrenamiento: ${signals.length} KOI (${signals.map(s => s[0]).join(', ')}). ${state.note || ''}`;
+    return;
+  }
   if (state.stars[kic] !== 'complete') {
     $('results').textContent = 'Esta estrella todavía no tiene resultados completos.';
     return;
@@ -56,17 +64,31 @@ async function results(state) {
       }
       const td = document.createElement('td');
       if (/^candidate_[0-9]+_folded\.png$/.test(row.plot_file || '')) {
+        const url = `/files/${state.id}/${kic}/${row.plot_file}`;
+        const thumb = document.createElement('a');
+        thumb.href = url;
+        thumb.target = '_blank';
+        thumb.rel = 'noopener';
+        thumb.className = 'curve-thumb';
+        thumb.title = 'Abrir a tamaño completo';
+        const img = document.createElement('img');
+        img.src = url;
+        img.loading = 'lazy';
+        img.alt = `Curva plegada del candidato ${row.rank || ''}`;
+        thumb.append(img);
         const link = node('a', 'Ver');
-        link.href = `/files/${state.id}/${kic}/${row.plot_file}`;
+        link.href = url;
         link.target = '_blank';
         link.rel = 'noopener';
-        td.append(link);
+        td.className = 'curve-cell';
+        td.append(thumb, link);
       }
       tr.append(td);
       table.append(tr);
     }
     $('results').append(table);
     if (!rows.length) $('results').append(node('p', 'Sin detecciones aceptadas.'));
+    renderCurves(state.id, kic, rows);
     for (const name of ['candidates.csv', 'detections.csv', 'metadata.json']) {
       const link = node('a', name);
       link.href = `/files/${state.id}/${kic}/${name}`;
@@ -79,12 +101,49 @@ async function results(state) {
   }
 }
 
+function figure(url, caption, className) {
+  const box = document.createElement('figure');
+  box.className = className || 'curve-figure';
+  const link = document.createElement('a');
+  link.href = url;
+  link.target = '_blank';
+  link.rel = 'noopener';
+  link.title = 'Abrir a tamaño completo';
+  const img = document.createElement('img');
+  img.src = url;
+  img.loading = 'lazy';
+  img.alt = caption;
+  img.onerror = () => box.remove();  // Resultados antiguos sin esa figura.
+  link.append(img);
+  box.append(link, node('figcaption', caption));
+  return box;
+}
+
+function renderCurves(job, kic, rows) {
+  const base = `/files/${job}/${kic}/`;
+  $('curves-title').textContent = `KIC ${kic}`;
+  const plotted = rows.filter(row => /^candidate_[0-9]+_folded\.png$/.test(row.plot_file || ''));
+  for (const row of plotted) {
+    const period = Number(row.period_days);
+    const caption = `Candidato ${row.rank || ''} · periodo ${Number.isFinite(period) ? period.toFixed(5) : '—'} d · ${row.triage_label || ''}`;
+    $('curves').append(figure(base + row.plot_file, caption));
+  }
+  if (!plotted.length) $('curves').append(node('p', 'Sin candidatos: abajo tienes la curva completa.'));
+  $('curves-extra').open = !plotted.length;
+  for (const [file, caption] of [['lightcurve.png', 'Curva completa (PDCSAP normalizada)'],
+      ['detrended_lightcurve.png', 'Curva sin tendencia'], ['bls_periodogram.png', 'Periodograma BLS']]) {
+    $('curves-extra-imgs').append(figure(base + file, caption, 'curve-figure small'));
+  }
+  $('curves-card').hidden = false;
+}
+
 let clusterEnabled = false;
 function renderCluster(cluster) {
   clusterEnabled = !!cluster.enabled;
   $('cluster-off').hidden = clusterEnabled;
   $('cluster-on').hidden = !clusterEnabled;
   $('distributed-label').hidden = !clusterEnabled;
+  $('train-card').hidden = !clusterEnabled;
   $('mode-badge').textContent = clusterEnabled ? '● RED LOCAL ACTIVA' : '● SOLO EN ESTE ORDENADOR';
   if (!clusterEnabled) return;
   const addresses = (cluster.addresses.length ? cluster.addresses : ['IP-de-este-PC']).map(a => `${a}:${cluster.port}`);
@@ -196,7 +255,7 @@ async function refresh() {
     $('serious').textContent = state.triage?.serious_count || 0;
     $('progress').max = state.ids.length;
     $('progress').value = done;
-    $('note').textContent = state.error || (state.kind === 'cluster' ? 'Reparto entre equipos de la red · cada estrella la analiza un ayudante y el coordinador valida el resultado.' : state.kind === 'blind' ? 'Cohorte TEST congelada. El control KIC 10854555 se ejecutará aparte, al terminar.' : 'Una estrella cada vez · Caché de curvas reutilizada · Configuración científica sin cambios.');
+    $('note').textContent = state.error || state.note || (state.kind === 'cluster' ? 'Reparto entre equipos de la red · cada estrella la analiza un ayudante y el coordinador valida el resultado.' : state.kind === 'blind' ? 'Cohorte TEST congelada. El control KIC 10854555 se ejecutará aparte, al terminar.' : 'Una estrella cada vez · Caché de curvas reutilizada · Configuración científica sin cambios.');
     $('resume').disabled = state.kind === 'cluster'
       ? (!clusterEnabled || ['running', 'completed'].includes(state.status))
       : (scanRunning || cnn.status === 'running' || state.status === 'completed');
@@ -265,6 +324,16 @@ $('discovery-add').onclick = async () => {
 };
 
 $('distributed').onchange = () => refresh();
+$('train-start').onclick = async () => {
+  const perClass = Number($('train-per-class').value);
+  if (!confirm(`¿Entrenar con ${perClass} ejemplos por clase? Los equipos descargarán curvas de KOI conocidos; puede tardar horas.`)) return;
+  try {
+    const job = await api('/api/train/start', {per_class: perClass});
+    selected = job.id;
+    msg('Entrenamiento repartido iniciado: los equipos empezarán a medir KOI.');
+    await refresh();
+  } catch (error) { msg(error.message); }
+};
 $('cluster-discovery').onchange = async () => {
   try {
     await api('/api/cluster/settings', {distribute_discovery: $('cluster-discovery').checked});

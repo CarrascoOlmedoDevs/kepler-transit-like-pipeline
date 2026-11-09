@@ -114,7 +114,7 @@ class Manager:
                     if value == 'running':
                         state['stars'][kic] = 'pending'
                         changed = True
-                if state['status'] == 'running':
+                if state['status'] in ('running', 'training'):
                     state.update(status='paused', error='Panel reiniciado; reanuda el reparto explícitamente.')
                     changed = True
                 state.pop('assigned', None)
@@ -570,7 +570,9 @@ class Manager:
         state = read(self.jobdir(job) / 'state.json')
         if str(kic) not in state['stars'] or state['stars'][str(kic)] != 'complete':
             raise ValueError('Resultados aún no disponibles')
-        if filename not in {'candidates.csv', 'detections.csv', 'metadata.json'} and not re.fullmatch(r'candidate_[0-9]+_folded\.png', filename):
+        if filename not in {'candidates.csv', 'detections.csv', 'metadata.json', 'lightcurve.png',
+                            'detrended_lightcurve.png', 'bls_periodogram.png'} and \
+                not re.fullmatch(r'candidate_[0-9]+_folded\.png', filename):
             raise ValueError('Archivo no permitido')
         base = self.root / 'results/blind_evaluation/blind_workspace' if job == 'blind' else self.jobdir(job) / 'workspace'
         path = base / f'results/KIC_{int(kic)}' / filename

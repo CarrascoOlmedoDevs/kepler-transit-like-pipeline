@@ -154,6 +154,13 @@ Si un ayudante deja de responder 10 minutos, su estrella vuelve a la cola; una e
 falla dos veces queda como fallida. El PC principal también puede ayudar: ejecuta `AYUDAR.bat`
 en él con la dirección `127.0.0.1:8769`.
 
+Entrenar el modelo entre todos: con el panel en modo red, la tarjeta **Entrenar RF repartido**
+reparte las estrellas con KOI etiquetados de DR25. Cada ayudante mide sus KOI (lo mismo que
+`build`) y el coordinador rehace la selección en el orden de `build`, escribe
+`data/training_features.csv`, `build_progress.json` y `build_manifest.json`, y ejecuta `train` y
+`evaluate`. El modelo nuevo se sincroniza solo con los ayudantes. Con 500 por clase y 6 PCs se
+midieron 977 estrellas en unas 2 horas.
+
 Seguridad: el panel sigue escuchando sólo en `127.0.0.1`; los ayudantes hablan con un servidor
 aparte (puerto 8769) que exige el token. Es para tu red local: no abras ese puerto a internet.
 El protocolo (`local_panel/cluster.py`, v1) está preparado para crecer a voluntarios por

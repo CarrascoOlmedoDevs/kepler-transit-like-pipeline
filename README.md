@@ -111,6 +111,31 @@ es una prueba de I/O, no garantiza tránsitos detectables para cualquier estrell
 Para KIC 11442793 se recomienda la cobertura completa. Nunca se reduce automáticamente
 el umbral para fabricar una detección.
 
+## Otros telescopios: K2 y TESS
+
+Además de Kepler, `scan` y `scan-list` aceptan estrellas de K2 (EPIC) y TESS (TIC):
+
+```powershell
+python kepler_rf_detector.py scan --tic 25155310 --sector 14
+python kepler_rf_detector.py scan --epic 201367065
+python kepler_rf_detector.py scan-list --mission tess --input mis_tic.csv --workers 2
+```
+
+- **TESS**: curvas SPOC de 2 min; si la estrella no las tiene, curvas TESS-SPOC de
+  imágenes completas (FFI). Sin `--sector` se combinan todos los sectores.
+- **K2**: PDCSAP long cadence del pipeline oficial. `--campaign N` elige una campaña.
+- `scan-list` acepta columnas `tic`/`tic_id`, `epic`/`epic_id` o `target_id`.
+- Resultados en `results/TIC_<id>/` y `results/EPIC_<id>/`; los lotes escriben
+  `batch_summary_tess.csv` / `batch_summary_k2.csv`. Kepler no cambia.
+- Tiempos en la misma escala para todas las misiones (BJD − 2454833, columna `epoch_bkjd`).
+
+Límites: el catálogo KOI/TCE y los modelos RF/CNN son de Kepler DR25. En K2/TESS no
+se hace cross-match y `rf_probability`/`cnn_probability` se marcan
+`model_calibrated=False`: sirven para ordenar, no como probabilidad. Un sector TESS
+dura ~27 días, así que con un solo sector sólo se detectan períodos cortos (con
+`--min-transits 2`, menos de ~13 días). `build`, `train` y el panel local siguen
+siendo sólo Kepler.
+
 ## Fuentes oficiales
 
 * [NASA Exoplanet Archive TAP](https://exoplanetarchive.ipac.caltech.edu/docs/TAP/usingTAP.html):

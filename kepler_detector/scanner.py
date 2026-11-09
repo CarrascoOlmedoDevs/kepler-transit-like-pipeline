@@ -18,6 +18,7 @@ from .schema import FEATURE_SCHEMA_HASH
 from .utils import setup, fingerprint, file_hash, atomic_csv, atomic_json
 from . import FEATURE_VERSION, PIPELINE_VERSION
 from . import plotting
+from . import missions
 
 
 def _local_bls_power(curve, candidate):
@@ -117,7 +118,7 @@ def build_families(rows, candidates, time):
     return families
 
 
-def signature(root, config, no_model=False):
+def signature(root, config, no_model=False, mission='kepler'):
     model = root / 'models/kepler_rf.joblib'
     cnn_model = root / 'models/kepler_exominer_lite.keras'
     cnn_metadata = root / 'models/kepler_exominer_lite_metadata.json'
@@ -127,14 +128,19 @@ def signature(root, config, no_model=False):
                         'model': file_hash(model) if model.exists() and not no_model else None,
                         'cnn_model': file_hash(cnn_model) if cnn_model.exists() and not no_model else None,
                         'cnn_metadata': file_hash(cnn_metadata) if cnn_metadata.exists() and not no_model else None,
-                        'catalog': file_hash(catalog) if catalog.exists() else None})
+                        'catalog': file_hash(catalog) if catalog.exists() else None,
+                        **({'mission': mission} if mission != 'kepler' else {})})
 
 
-def scan(root, kic, config, force=False, no_model=False, semaphore=None):
+def scan(root, kic, config, force=False, no_model=False, semaphore=None, mission='kepler'):
+    """`kic` es el identificador de la misión (KIC, EPIC o TIC)."""
     root = setup(root)
+    info = missions.get(mission)
+    mission = info.key
+    name = info.label(kic)
     logger = logging.getLogger('kepler')
     started = time.monotonic()
-    output = root / f'results/KIC_{int(kic)}'
+    output = root / 'results' / info.folder(kic)
     output.mkdir(parents=True, exist_ok=True)
     meta_path = output / 'metadata.json'
     artifact = None if no_model else load_model(root)
@@ -145,11 +151,14 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None):
             cnn_predictor = load_predictor(root)
         except RuntimeError as error:
             logger.warning('CNN no disponible: %s', error)
-    sig = signature(root, config, no_model)
+    sig = signature(root, config, no_model, mission)
+    if not info.calibrated and not no_model:
+        logger.warning('%s: RF/CNN entrenados con Kepler; probabilidades no calibradas para %s',
+                       name, info.lk_mission)
     if meta_path.exists() and not force:
         previous = json.loads(meta_path.read_text(encoding='utf-8'))
         if previous.get('signature') == sig and previous.get('status') == 'complete':
-            logger.info('KIC %s: resultado recuperado del checkpoint', kic)
+            logger.info('%s: resultado recuperado del checkpoint', name)
             return pd.read_csv(output / 'candidates.csv')
     if artifact:
         if artifact.get('train_rows', 0) < 200:
@@ -163,20 +172,22 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None):
     # Metadata de ejecución incompleta invalida un checkpoint previo antes de escribir figuras.
     atomic_json({'status': 'running', 'signature': sig}, meta_path)
     if semaphore is None:
-        raw = download(root, kic, config.quarter)
+        raw = download(root, kic, config.quarter, mission=mission)
     else:
         with semaphore:
-            raw = download(root, kic, config.quarter)
+            raw = download(root, kic, config.quarter, mission=mission)
     curve = preprocess(raw, config)
-    plotting.lightcurve(raw, output / 'lightcurve.png', f'KIC {kic}: PDCSAP normalizado por segmento')
-    plotting.lightcurve(curve, output / 'detrended_lightcurve.png', f'KIC {kic}: detrended')
+    plotting.lightcurve(raw, output / 'lightcurve.png', f'{name}: PDCSAP normalizado por segmento')
+    plotting.lightcurve(curve, output / 'detrended_lightcurve.png', f'{name}: detrended')
     if config.save_curves:
         save_curve(raw, output / 'original.npz')
         save_curve(curve, output / 'detrended.npz')
-    catalog_path = root / 'data/koi_dr25.csv'
-    catalog = pd.read_csv(catalog_path) if catalog_path.exists() else None
-    tce_path = root / 'data/tce_dr25.csv'
-    tce_catalog = pd.read_csv(tce_path) if tce_path.exists() else None
+    catalog = tce_catalog = None
+    if mission == 'kepler':  # KOI/TCE DR25 sólo describen estrellas Kepler.
+        catalog_path = root / 'data/koi_dr25.csv'
+        catalog = pd.read_csv(catalog_path) if catalog_path.exists() else None
+        tce_path = root / 'data/tce_dr25.csv'
+        tce_catalog = pd.read_csv(tce_path) if tce_path.exists() else None
     available = np.ones(len(curve.time), dtype=bool)
     found, rows, first_result = [], [], None
     stop_reason = 'max_detections reached'
@@ -194,7 +205,7 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None):
                 measured = extract(residual, peak)
                 stability = transit_consistency(residual, peak)
             except ValueError as error:
-                logger.debug('KIC %s: pico %.6f no medible: %s', kic, peak.period, error)
+                logger.debug('%s: pico %.6f no medible: %s', name, peak.period, error)
                 continue
             selected, features, consistency = peak, measured, stability
             break
@@ -212,16 +223,19 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None):
                 from .cnn import predict_candidate
                 cnn_probability = predict_candidate(cnn_predictor, residual, selected, features)
             except ValueError as error:
-                logger.warning('KIC %s: candidato CNN no medible: %s', kic, error)
+                logger.warning('%s: candidato CNN no medible: %s', name, error)
         vetting = vet(combined, config.min_snr, config.min_transits)
-        row = {'kepid': int(kic), 'detection_order': iteration + 1, 'epoch_bkjd': selected.epoch,
+        ident = ({'kepid': int(kic)} if mission == 'kepler' else
+                 {'mission': mission, 'target': name, 'target_id': int(kic),
+                  'model_calibrated': False})
+        row = {**ident, 'detection_order': iteration + 1, 'epoch_bkjd': selected.epoch,
                **combined, 'rf_probability': rf, 'rf_available': artifact is not None,
                'cnn_probability': cnn_probability, 'cnn_available': cnn_predictor is not None,
                **vetting,
                'priority_score': priority_score(combined, rf, vetting['vetting_flags']),
                **match(kic, selected.period, catalog, config.match_tolerance, tce_catalog)}
         row['plot_file'] = f'candidate_{iteration + 1:02d}_folded.png'
-        plotting.folded(residual, selected, row, output / row['plot_file'], kic)
+        plotting.folded(residual, selected, row, output / row['plot_file'], name)
         repeated = any(duplicate(selected, previous, curve.time) for previous in found)
         available, effectiveness, mask_width, removed_fraction = adaptive_mask(
             curve, available, selected, target_effectiveness=0.9 if repeated else 0.8,
@@ -231,8 +245,8 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None):
                    masked_fraction=removed_fraction)
         rows.append(row)
         found.append(selected)
-        logger.info('KIC %s: candidato P=%.6fd SNR=%.2f RF=%s CNN=%s',
-                    kic, selected.period, features['depth_snr'], rf, cnn_probability)
+        logger.info('%s: candidato P=%.6fd SNR=%.2f RF=%s CNN=%s',
+                    name, selected.period, features['depth_snr'], rf, cnn_probability)
     plotting.periodogram(first_result, output / 'bls_periodogram.png')
     families = build_families(rows, found, curve.time) if rows else []
     raw = pd.DataFrame(rows)
@@ -251,7 +265,10 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None):
         result['duplicates_removed'] = sum(row['family_relation'] == 'alias' for row in rows)
         result['harmonic_detections'] = sum(row['family_relation'] == 'harmonic' for row in rows)
     atomic_csv(result, output / 'candidates.csv')
-    atomic_json({'status': 'complete', 'signature': sig, 'kic': int(kic), 'config': config.to_dict(),
+    extra = {} if mission == 'kepler' else {
+        'mission': mission, 'target': name, 'model_calibrated': False,
+        'model_warning': 'RF/CNN entrenados con Kepler DR25: usar sus probabilidades sólo como orientación'}
+    atomic_json({'status': 'complete', 'signature': sig, 'kic': int(kic), **extra, 'config': config.to_dict(),
                  'source': curve.metadata, 'feature_version': FEATURE_VERSION,
                  'raw_detections': len(rows), 'candidate_families': len(families),
                  'candidates': len(families),
@@ -262,39 +279,45 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None):
                  'rf_available': artifact is not None, 'mask_width_duration_range': [1.5, 4.0],
                  'cnn_available': cnn_predictor is not None,
                  'warning': 'Candidatos de tránsito; no confirmación ni descubrimiento planetario'}, meta_path)
-    logger.info('KIC %s finalizado: %d detecciones, %d familias, %.1fs',
-                kic, len(rows), len(families), time.monotonic() - started)
+    logger.info('%s finalizado: %d detecciones, %d familias, %.1fs',
+                name, len(rows), len(families), time.monotonic() - started)
     return result
 
 
-def _worker(root, kic, config, force, no_model, semaphore):
+def _worker(root, kic, config, force, no_model, semaphore, mission='kepler'):
     try:
-        result = scan(Path(root), kic, config, force, no_model, semaphore)
+        result = scan(Path(root), kic, config, force, no_model, semaphore, mission)
         return {'status': 'complete', 'candidates': len(result)}
     except Exception as error:
-        logging.getLogger('kepler').debug('Batch KIC %s error', kic, exc_info=True)
-        logging.getLogger('kepler').warning('KIC %s falló: %s', kic, error)
+        label = missions.get(mission).label(kic)
+        logging.getLogger('kepler').debug('Batch %s error', label, exc_info=True)
+        logging.getLogger('kepler').warning('%s falló: %s', label, error)
         return {'status': 'failed', 'error': str(error)}
 
 
-def scan_list(root, input_path, config, limit=None, workers=1, force=False, no_model=False, retry_failed=False):
+def scan_list(root, input_path, config, limit=None, workers=1, force=False, no_model=False, retry_failed=False,
+              mission='kepler'):
+    info = missions.get(mission)
+    mission = info.key
     if not 1 <= workers <= 4:
         raise ValueError('workers debe estar entre 1 y 4; máximo 2 descargas simultáneas')
     if limit is not None and limit < 1:
         raise ValueError('limit debe ser positivo')
     frame = pd.read_csv(input_path)
-    if 'kepid' not in frame:
-        raise ValueError('CSV de entrada debe incluir kepid')
-    kics = list(dict.fromkeys(frame.kepid.dropna().astype(int)))[:limit]
+    column = next((c for c in info.id_columns if c in frame), None)
+    if column is None:
+        raise ValueError(f'CSV de entrada debe incluir una columna: {", ".join(info.id_columns)}')
+    kics = list(dict.fromkeys(frame[column].dropna().astype(int)))[:limit]
     if not no_model:
         load_model(root)  # Error global de configuración, antes de lanzar estrellas.
-    checkpoint = root / 'results/batch_progress.json'
+    suffix = '' if mission == 'kepler' else f'_{mission}'
+    checkpoint = root / f'results/batch_progress{suffix}.json'
     progress = json.loads(checkpoint.read_text(encoding='utf-8')) if checkpoint.exists() else {}
-    sig = signature(root, config, no_model)
+    sig = signature(root, config, no_model, mission)
     pending = []
     for kic in kics:
         entry = progress.get(str(kic), {})
-        has_result = (root / f'results/KIC_{kic}/candidates.csv').exists()
+        has_result = (root / 'results' / info.folder(kic) / 'candidates.csv').exists()
         valid = entry.get('signature') == sig
         if force or not valid or (entry.get('status') == 'complete' and not has_result) or (
             entry.get('status') == 'failed' and retry_failed) or entry.get('status') not in ('complete', 'failed'):
@@ -307,12 +330,13 @@ def scan_list(root, input_path, config, limit=None, workers=1, force=False, no_m
 
     if workers == 1:
         for kic in pending:
-            checkpoint_result(kic, _worker(str(root), kic, config, force, no_model, None))
+            checkpoint_result(kic, _worker(str(root), kic, config, force, no_model, None, mission))
     elif pending:
         with multiprocessing.Manager() as manager:
             semaphore = manager.BoundedSemaphore(2)
             with ProcessPoolExecutor(max_workers=workers) as pool:
-                jobs = {pool.submit(_worker, str(root), kic, config, force, no_model, semaphore): kic for kic in pending}
+                jobs = {pool.submit(_worker, str(root), kic, config, force, no_model, semaphore, mission): kic
+                        for kic in pending}
                 for future in as_completed(jobs):
                     kic = jobs[future]
                     try:
@@ -324,9 +348,10 @@ def scan_list(root, input_path, config, limit=None, workers=1, force=False, no_m
     for kic in kics:
         entry = progress.get(str(kic), {})
         if entry.get('signature') == sig and entry.get('status') == 'complete':
-            table = pd.read_csv(root / f'results/KIC_{kic}/candidates.csv')
+            table = pd.read_csv(root / 'results' / info.folder(kic) / 'candidates.csv')
             tables.append(table)
-    summary = pd.concat(tables, ignore_index=True) if tables else pd.DataFrame(columns=['kepid', 'priority_score'])
+    id_column = 'kepid' if mission == 'kepler' else 'target'
+    summary = pd.concat(tables, ignore_index=True) if tables else pd.DataFrame(columns=[id_column, 'priority_score'])
     summary = summary.sort_values('priority_score', ascending=False)
-    atomic_csv(summary, root / 'results/batch_summary.csv')
+    atomic_csv(summary, root / f'results/batch_summary{suffix}.csv')
     return progress

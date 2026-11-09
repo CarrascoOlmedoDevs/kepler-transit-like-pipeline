@@ -162,6 +162,10 @@ class LocalPanelTests(unittest.TestCase):
                 f'{rank},{1000 + rank}\n' for rank in range(start, start + 10))
             (batches / f'batch_{number:02d}.csv').write_text(rows, encoding='utf-8')
 
+        offline = patch('kepler_detector.catalog.replenish_discovery_batches',
+                        side_effect=OSError('sin red'))
+        offline.start()
+        self.addCleanup(offline.stop)
         automation = self.manager.start_discovery()
         first = self.manager.active
         first_state = read(self.manager.jobdir(first) / 'state.json')

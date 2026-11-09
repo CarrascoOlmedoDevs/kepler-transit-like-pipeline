@@ -140,15 +140,24 @@ function render(data) {
   $('priority-count').textContent = `${priority.length} señal(es)`;
   $('review-count').textContent = `${review.length} señal(es)`;
   $('priority').replaceChildren(...priority.map(row => card(row, watched.has(row.kic))));
-  if (!priority.length) $('priority').append(node('p', mission === 'tess'
-    ? 'En TESS no se marcan prioritarias automáticamente: revisa las señales de abajo.'
-    : 'Todavía ninguna. Con el modelo entrenado, las nuevas estrellas analizadas pueden aparecer aquí.', 'muted empty'));
   $('review').replaceChildren(...review.slice(0, reviewLimit).map(row => card(row, watched.has(row.kic))));
-  if (!review.length) $('review').append(node('p', 'Nada pendiente de revisar.', 'muted empty'));
   $('review-more').hidden = review.length <= reviewLimit;
+  // Secciones vacías: una sola línea en vez de tarjetas grandes.
+  $('priority-section').hidden = !priority.length;
+  $('review-section').hidden = !review.length;
+  const empty = !priority.length && !review.length;
+  $('empty-signals').hidden = !empty;
+  $('empty-signals').textContent = !data.stars
+    ? 'Aún no hay estrellas analizadas en esta misión. Empieza desde Control de análisis.'
+    : mission === 'tess'
+      ? 'Ninguna señal para revisar todavía. En TESS no se marcan serias automáticamente: las mejores aparecerán aquí.'
+      : `Ninguna señal seria ni para revisar entre las ${data.stars.toLocaleString('es-ES')} estrellas analizadas. Es lo normal: la mayoría de estrellas no tienen planetas en tránsito.`;
 
+  renderTeam(data.team || []);
+  renderRecent(data.recent || []);
+
+  $('watch-section').hidden = !data.watchlist.length;
   $('watchlist').replaceChildren();
-  if (!data.watchlist.length) $('watchlist').append(node('p', 'Marca estrellas con ☆ Seguir para tenerlas siempre a mano.', 'muted empty'));
   for (const entry of data.watchlist) {
     const row = node('div', null, 'watch-row');
     const text = node('div');
@@ -156,12 +165,50 @@ function render(data) {
     const actions = node('div', null, 'actions');
     if (entry.job) actions.append(openLink(entry.job, entry.kic));
     else actions.append(node('span', 'aún sin analizar', 'muted small'));
-    const remove = node('button', 'Quitar', 'secondary');
+    const remove = node('button', 'Dejar de seguir', 'secondary');
     remove.onclick = async () => { await api('/api/watch', {kic: entry.kic, action: 'remove'}); refresh(); };
     actions.append(remove);
     row.append(text, actions);
     $('watchlist').append(row);
   }
+}
+
+function renderTeam(team) {
+  $('team-section').hidden = !team.length;
+  $('team').replaceChildren(...team.map(helper => {
+    const item = node('div', null, 'member' + (helper.online ? ' online' : ''));
+    const name = node('strong', helper.name.replace(' (este PC)', ''));
+    if (helper.name.includes('(este PC)')) name.append(node('em', 'este PC'));
+    const doing = helper.current
+      ? `analiza ${starName(helper.current, helper.current_mission)}`
+      : (helper.online ? 'esperando trabajo' : 'desconectado');
+    item.append(name, node('span', doing), node('small', `${Number(helper.completed).toLocaleString('es-ES')} hechas en esta sesión`));
+    return item;
+  }));
+}
+
+const LABEL_TEXT = {prioritario: 'Seria', revisar: 'Para revisar', 'débil': 'Débil', debil: 'Débil', descartable: 'Descartada'};
+function renderRecent(recent) {
+  $('recent-section').hidden = !recent.length;
+  $('recent').replaceChildren(...recent.map(star => {
+    const tile = document.createElement('a');
+    tile.className = 'tile';
+    tile.href = `/control?job=${encodeURIComponent(star.job)}&kic=${encodeURIComponent(star.kic)}`;
+    const file = /^candidate_[0-9]+_folded\.png$/.test(star.plot_file || '') ? star.plot_file : 'lightcurve.png';
+    const img = document.createElement('img');
+    img.src = `/files/${star.job}/${star.kic}/${file}`;
+    img.loading = 'lazy';
+    img.alt = `Curva de ${starName(star.kic)}`;
+    img.onerror = () => img.remove();
+    const head = node('div', null, 'tile-head');
+    head.append(node('strong', starName(star.kic)),
+      node('span', star.label ? LABEL_TEXT[star.label] || star.label : 'Sin señal', 'tag ' + (star.label || 'none')));
+    const facts = star.label
+      ? `${fixed(star.period_days, 3)} d · SNR ${fixed(star.depth_snr, 1)}`
+      : 'Curva completa';
+    tile.append(img, head, node('span', facts, 'small muted'));
+    return tile;
+  }));
 }
 
 async function refresh() {
@@ -174,22 +221,10 @@ async function refresh() {
   }
 }
 
-$('watch-form').onsubmit = async event => {
-  event.preventDefault();
-  try {
-    await api('/api/watch', {kic: Number($('watch-kic').value.trim()), action: 'add', note: $('watch-note').value});
-    $('watch-kic').value = '';
-    $('watch-note').value = '';
-    await refresh();
-  } catch (error) { msg(error.message); }
-};
 $('review-more').onclick = () => { reviewLimit += 12; render(lastOverview); };
 
 loadMode().then(() => {
   $('home-eyebrow').textContent = mission === 'tess' ? 'Resumen del observatorio en TESS' : 'Resumen del observatorio en Kepler';
-  $('watch-kic').placeholder = PREFIX[mission];
-  if (mission === 'tess') document.querySelector('#priority').closest('.card').querySelector('p.muted').textContent =
-    'En TESS el modelo es el de Kepler (no calibrado): ninguna señal sale como prioritaria sin revisión. Mira "A revisar".';
   refresh();
 });
 setInterval(refresh, 20000);

@@ -679,14 +679,19 @@ class Manager:
             for kic, status in state.get('stars', {}).items():
                 if status == 'complete' and (self.star_folder(state, kic) / 'candidates.csv').exists():
                     latest[int(kic)] = state
-        rows, labels, without_model = [], {}, set()
+        rows, labels, without_model, recent = [], {}, set(), []
+        rank_order = {'prioritario': 0, 'revisar': 1, 'débil': 2, 'debil': 2, 'descartable': 3}
         for kic, state in latest.items():
             path = self.star_folder(state, kic) / 'candidates.csv'
+            best = None
             with path.open(encoding='utf-8', newline='') as stream:
                 for row in csv.DictReader(stream):
                     assessment = assess_candidate(row)
                     label = assessment['triage_label']
                     labels[label] = labels.get(label, 0) + 1
+                    key = (rank_order.get(label, 4), -self._float(row.get('priority_score')))
+                    if best is None or key < best[0]:
+                        best = (key, row, label)
                     if str(row.get('rf_available', '')).lower() != 'true':
                         without_model.add(kic)
                     if label not in ('prioritario', 'revisar'):
@@ -696,6 +701,15 @@ class Manager:
                                 by=(state.get('done_by') or {}).get(str(kic), ''),
                                 label=label, reason=assessment['triage_reason'])
                     rows.append(item)
+            # "Últimas analizadas": la mejor señal de cada estrella (o su curva completa si no hay).
+            entry = dict(kic=kic, job=state['id'], finished=path.stat().st_mtime,
+                         by=(state.get('done_by') or {}).get(str(kic), ''), label=None)
+            if best:
+                entry.update({key: best[1].get(key, '') for key in ('period_days', 'depth_ppm', 'depth_snr',
+                                                                     'plot_file', 'known_koi', 'known_toi')},
+                             label=best[2])
+            recent.append(entry)
+        recent = sorted(recent, key=lambda r: -r['finished'])[:12]
         watch = read(self.folder / 'watchlist.json', {}) or {}
         followed = []
         for key, entry in watch.items():
@@ -708,7 +722,13 @@ class Manager:
         rows.sort(key=lambda r: (rank[r['label']], -self._float(r['priority_score'])))
         model = self.root / 'models/kepler_rf_metrics.json'
         helpers = self.cluster.details()['helpers'] if self.cluster else []
+        team = [dict(name=h['name'], online=h['online'], completed=h['completed'],
+                     current=int(h['current'].split(':')[1]) if h.get('current') else None,
+                     current_mission=mission_of(read(self.folder / h['current'].split(':')[0] / 'state.json', {}))
+                     if h.get('current') else None)
+                for h in helpers]
         return dict(stars=len(latest), candidates=sum(labels.values()), labels=labels, follow=rows,
+                    recent=recent, team=team,
                     watchlist=sorted(followed, key=lambda f: -f.get('added', 0)),
                     without_model=len(without_model), model=read(model, None) if model.exists() else None,
                     helpers_online=sum(h['online'] for h in helpers), helpers=len(helpers),

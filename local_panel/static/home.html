@@ -26,29 +26,37 @@
     </figure>
   </section>
   <p id="message" role="status"></p>
+
+  <section class="team" id="team-section" hidden aria-label="Equipos trabajando ahora">
+    <h2 class="section-title">Equipos ahora</h2>
+    <div class="team-list" id="team"></div>
+  </section>
+
   <p class="banner" id="no-model" hidden></p>
 
-  <section class="card">
-    <div class="row"><div><h2>Señales serias</h2></div><span class="muted small" id="priority-count"></span></div>
-    <p class="muted small">RF ≥ 0,65, CNN ≥ 0,60, prioridad ≥ 35, SNR ≥ 10, al menos 3 tránsitos consistentes y ninguna alerta grave.</p>
+  <section class="card" id="priority-section">
+    <div class="row"><h2>Señales serias</h2><span class="muted small" id="priority-count"></span></div>
+    <p class="muted small" id="priority-rule">RF ≥ 0,65, CNN ≥ 0,60, prioridad ≥ 35, SNR ≥ 10, al menos 3 tránsitos consistentes y ninguna alerta grave.</p>
     <div class="cards" id="priority"></div>
   </section>
 
-  <section class="card">
-    <div class="row"><div><h2>Tu seguimiento</h2></div></div>
-    <form id="watch-form" class="watch-form">
-      <input id="watch-kic" inputmode="numeric" placeholder="KIC" aria-label="Estrella a seguir">
-      <input id="watch-note" placeholder="Nota (opcional): por qué la sigues" aria-label="Nota">
-      <button type="submit">☆ Seguir</button>
-    </form>
-    <div id="watchlist"></div>
-  </section>
-
-  <section class="card">
-    <div class="row"><div><h2>Para revisar</h2></div><span class="muted small" id="review-count"></span></div>
-    <p class="muted small">Sin alertas graves y con al menos 3 tránsitos, pero por debajo de los umbrales de "prioritario". Merecen un vistazo.</p>
+  <section class="card" id="review-section">
+    <div class="row"><h2>Para revisar</h2><span class="muted small" id="review-count"></span></div>
+    <p class="muted small">Sin alertas graves y con al menos 3 tránsitos, pero por debajo de los umbrales de las serias. Merecen un vistazo.</p>
     <div class="cards" id="review"></div>
     <button class="secondary more" id="review-more" hidden>Ver más</button>
+  </section>
+
+  <p class="quiet" id="empty-signals" hidden></p>
+
+  <section class="recent-section" id="recent-section" hidden>
+    <div class="row"><h2 class="section-title">Últimas analizadas</h2><a class="small" href="/control">Ver todas en Control</a></div>
+    <div class="recent" id="recent"></div>
+  </section>
+
+  <section class="card" id="watch-section" hidden>
+    <div class="row"><h2>Tu seguimiento</h2><span class="muted small">Marca o desmarca con ☆ en cada señal</span></div>
+    <div id="watchlist"></div>
   </section>
 
   <footer>Se actualiza cada 20 segundos. Los datos se guardan en este PC. <a href="/control">Ir al control de análisis</a></footer>

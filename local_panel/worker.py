@@ -127,8 +127,13 @@ def run(root, job):
             else:
                 from config import Config
                 from kepler_detector.scanner import scan
+                no_model = not (work / 'models/kepler_rf.joblib').exists()
+                if no_model and not state.get('no_model_warned'):
+                    print('AVISO: no hay modelo RF entrenado (models/kepler_rf.joblib). Se buscan señales '
+                          'con BLS y vetting, sin probabilidades RF/CNN ni marca de "prioritario".', flush=True)
+                    state['no_model_warned'] = True
                 try:
-                    scan(work, kic, Config())
+                    scan(work, kic, Config(), no_model=no_model)
                     status = 'complete'
                 except Exception:
                     traceback.print_exc()

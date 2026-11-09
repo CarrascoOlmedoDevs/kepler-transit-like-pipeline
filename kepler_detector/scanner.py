@@ -118,6 +118,14 @@ def build_families(rows, candidates, time):
     return families
 
 
+def read_candidates(path):
+    """Una estrella sin candidatos guarda un CSV vacío; leerlo no debe fallar."""
+    try:
+        return pd.read_csv(path)
+    except pd.errors.EmptyDataError:
+        return pd.DataFrame()
+
+
 def signature(root, config, no_model=False, mission='kepler'):
     model = root / 'models/kepler_rf.joblib'
     cnn_model = root / 'models/kepler_exominer_lite.keras'
@@ -159,7 +167,7 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None, mission
         previous = json.loads(meta_path.read_text(encoding='utf-8'))
         if previous.get('signature') == sig and previous.get('status') == 'complete':
             logger.info('%s: resultado recuperado del checkpoint', name)
-            return pd.read_csv(output / 'candidates.csv')
+            return read_candidates(output / 'candidates.csv')
     if artifact:
         if artifact.get('train_rows', 0) < 200:
             logger.warning('RF entrenado con sólo %d señales: modelo de prueba, sin rendimiento validado',
@@ -348,7 +356,7 @@ def scan_list(root, input_path, config, limit=None, workers=1, force=False, no_m
     for kic in kics:
         entry = progress.get(str(kic), {})
         if entry.get('signature') == sig and entry.get('status') == 'complete':
-            table = pd.read_csv(root / 'results' / info.folder(kic) / 'candidates.csv')
+            table = read_candidates(root / 'results' / info.folder(kic) / 'candidates.csv')
             tables.append(table)
     id_column = 'kepid' if mission == 'kepler' else 'target'
     summary = pd.concat(tables, ignore_index=True) if tables else pd.DataFrame(columns=[id_column, 'priority_score'])

@@ -156,6 +156,19 @@ class MissionScanTests(unittest.TestCase):
                 scan_list(root, bad, self.config(), no_model=True, mission='k2')
 
 
+class EmptyCheckpointTests(unittest.TestCase):
+    def test_star_without_candidates_recovers_from_checkpoint(self):
+        from kepler_detector.scanner import scan
+        import numpy as np
+        curve, _ = synthetic(depth=0)  # Sin tránsito: ningún candidato.
+        with temporary_project() as tmp:
+            root = setup(Path(tmp))
+            save_curve(curve, cache_path(root, 55))
+            cfg = Config(period_max=10, coarse_points=1000, refine_peaks=3, max_planets=2)
+            self.assertEqual(len(scan(root, 55, cfg, no_model=True)), 0)
+            self.assertEqual(len(scan(root, 55, cfg, no_model=True)), 0)  # Antes: EmptyDataError
+
+
 class MissionCliTests(unittest.TestCase):
     def run_cli(self, argv):
         import kepler_rf_detector as cli

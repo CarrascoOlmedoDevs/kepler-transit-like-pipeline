@@ -59,7 +59,7 @@ class LocalPanelTests(unittest.TestCase):
         job = self.create()
         folder = self.manager.jobdir(job)
         seen = []
-        def scan(work, kic, config):
+        def scan(work, kic, config, **kw):
             seen.append(kic)
             write(folder / 'command.json', {'action': 'pause'})
         with patch('kepler_detector.scanner.scan', side_effect=scan):
@@ -67,7 +67,7 @@ class LocalPanelTests(unittest.TestCase):
         self.assertEqual(seen, [123])
         self.assertEqual(read(folder / 'state.json')['status'], 'paused')
         write(folder / 'command.json', {'action': 'run'})
-        with patch('kepler_detector.scanner.scan', side_effect=lambda w,k,c: seen.append(k)):
+        with patch('kepler_detector.scanner.scan', side_effect=lambda w,k,c,**kw: seen.append(k)):
             run(self.root, job)
         self.assertEqual(seen, [123, 456])
         self.assertEqual(read(folder / 'state.json')['status'], 'completed')

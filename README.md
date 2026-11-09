@@ -136,6 +136,29 @@ dura ~27 días, así que con un solo sector sólo se detectan períodos cortos (
 `--min-transits 2`, menos de ~13 días). `build`, `train` y el panel local siguen
 siendo sólo Kepler.
 
+## Repartir el trabajo entre varios PCs (red local)
+
+1. **En el PC principal**: `ABRIR_PANEL_RED.bat`. El panel muestra en "Equipos ayudantes"
+   la dirección (`IP:8769`) y un token. Si Windows pregunta, permite el firewall en redes privadas.
+2. **En cada PC ayudante**: copia la carpeta de Sakanet (o `git clone`) y ejecuta `AYUDAR.bat`.
+   Si falta, instala Python y dependencias. La primera vez pide dirección, token y cuántas
+   estrellas analizar a la vez; se guarda en `ayudante.json` (`AYUDAR.bat reconfigurar` para cambiarlo).
+3. En el panel, marca **Repartir entre los equipos de la red** al crear un análisis, o
+   **Repartir también el descubrimiento automático** para que los lotes vayan a los ayudantes.
+
+Cómo funciona: cada ayudante pide una estrella, la descarga de MAST, la analiza con el mismo
+código, configuración y modelos (los modelos y catálogos del coordinador se sincronizan solos)
+y devuelve `candidates.csv`, metadatos y figuras. El coordinador acepta el resultado sólo si la
+firma del análisis coincide con la suya y el ZIP contiene únicamente los archivos esperados.
+Si un ayudante deja de responder 10 minutos, su estrella vuelve a la cola; una estrella que
+falla dos veces queda como fallida. El PC principal también puede ayudar: ejecuta `AYUDAR.bat`
+en él con la dirección `127.0.0.1:8769`.
+
+Seguridad: el panel sigue escuchando sólo en `127.0.0.1`; los ayudantes hablan con un servidor
+aparte (puerto 8769) que exige el token. Es para tu red local: no abras ese puerto a internet.
+El protocolo (`local_panel/cluster.py`, v1) está preparado para crecer a voluntarios por
+internet, que necesitará HTTPS, un token por voluntario y validación cruzada de resultados.
+
 ## Fuentes oficiales
 
 * [NASA Exoplanet Archive TAP](https://exoplanetarchive.ipac.caltech.edu/docs/TAP/usingTAP.html):

@@ -61,6 +61,8 @@ def make_server(root=ROOT, port=8768, manager=None):
                     return self.send(manager.cnn_details())
                 if path == '/api/discovery':
                     return self.send(manager.discovery_details())
+                if path == '/api/settings':
+                    return self.send({'mission': manager.mode()})
                 if path == '/api/overview':
                     return self.send(manager.overview())
                 if path == '/api/cluster':
@@ -106,6 +108,8 @@ def make_server(root=ROOT, port=8768, manager=None):
                 if path == '/api/cnn/stop':
                     manager.stop_cnn()
                     return self.send({'ok': True})
+                if path == '/api/settings':
+                    return self.send(manager.set_mode(data.get('mission')))
                 if path == '/api/discovery/start':
                     return self.send(manager.start_discovery(), 202)
                 if path == '/api/discovery/replenish':

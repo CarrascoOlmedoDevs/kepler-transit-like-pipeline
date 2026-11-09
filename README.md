@@ -166,6 +166,23 @@ aparte (puerto 8769) que exige el token. Es para tu red local: no abras ese puer
 El protocolo (`local_panel/cluster.py`, v1) está preparado para crecer a voluntarios por
 internet, que necesitará HTTPS, un token por voluntario y validación cruzada de resultados.
 
+## Modo TESS en el panel
+
+Arriba a la derecha, el selector **Kepler | TESS** cambia el panel entero de misión:
+
+- **Nuevo análisis** acepta TIC; se analizan todos los sectores con curvas SPOC de 2 min
+  (o TESS-SPOC FFI si no hay). Se puede repartir entre los equipos igual que en Kepler.
+- **Descubrimiento TESS**: recorre los sectores en orden, toma las estrellas observadas a
+  2 min por SPOC (consulta MAST), descarta las que ya tienen un TOI y baraja cada sector con
+  semilla fija (`data/tess_discovery_targets.csv`, `data/tess_discovery_batches/`).
+- Cada señal se cruza con el catálogo TOI del NASA Exoplanet Archive (`data/tess_toi.csv`,
+  sincronizado con los ayudantes): "Ya conocida · TOI 114.01" o "Señal nueva".
+- El modelo RF es de Kepler: en TESS sus probabilidades son orientativas
+  (`model_calibrated=False`) y ninguna señal se marca como "prioritaria"; las mejores
+  aparecen en "A revisar".
+- Resumen, seguimiento y descubrimiento automático van por separado en cada misión; sólo
+  una secuencia automática está activa a la vez. Los ayudantes necesitan la versión v4.
+
 ## Fuentes oficiales
 
 * [NASA Exoplanet Archive TAP](https://exoplanetarchive.ipac.caltech.edu/docs/TAP/usingTAP.html):

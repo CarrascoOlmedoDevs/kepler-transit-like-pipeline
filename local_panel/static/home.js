@@ -4,6 +4,26 @@ let token = '';
 let reviewLimit = 12;
 let lastOverview = null;
 
+// ---- Selector Kepler | TESS (compartido por las dos páginas) ----
+let mission = 'kepler';
+const PREFIX = {kepler: 'KIC', tess: 'TIC'};
+const starName = (id, m) => `${PREFIX[m || mission] || 'KIC'} ${id}`;
+async function loadMode() {
+  const response = await fetch('/api/settings');
+  mission = (await response.json()).mission || 'kepler';
+  document.body.dataset.mission = mission;
+  for (const button of document.querySelectorAll('.mode-switch button')) {
+    button.classList.toggle('on', button.dataset.mission === mission);
+    button.onclick = async () => {
+      if (button.dataset.mission === mission) return;
+      if (!token) token = (await (await fetch('/api/state')).json()).token;
+      const result = await fetch('/api/settings', {method: 'POST', headers: {'Content-Type': 'application/json',
+        'X-Panel-Token': token}, body: JSON.stringify({mission: button.dataset.mission})});
+      if (result.ok) location.href = location.pathname;  // Recargar en el nuevo modo.
+    };
+  }
+}
+
 function node(tag, text, className) {
   const element = document.createElement(tag);
   if (text !== undefined && text !== null) element.textContent = text;
@@ -43,7 +63,7 @@ function followButton(kic, watched) {
   button.onclick = async () => {
     try {
       if (watched) await api('/api/watch', {kic, action: 'remove'});
-      else await api('/api/watch', {kic, action: 'add', note: prompt(`Nota para KIC ${kic} (opcional):`) || ''});
+      else await api('/api/watch', {kic, action: 'add', note: prompt(`Nota para ${starName(kic)} (opcional):`) || ''});
       await refresh();
     } catch (error) { msg(error.message); }
   };
@@ -60,16 +80,19 @@ function card(row, watched) {
     const img = document.createElement('img');
     img.src = link.href;
     img.loading = 'lazy';
-    img.alt = `Curva plegada de KIC ${row.kic}`;
+    img.alt = `Curva plegada de ${starName(row.kic)}`;
     img.onerror = () => link.remove();
     link.append(img);
     box.append(link);
   }
   const head = node('div', null, 'star-head');
-  head.append(node('h3', `KIC ${row.kic}`));
+  head.append(node('h3', starName(row.kic)));
+  const knownToi = String(row.known_toi).toLowerCase() === 'true';
   head.append(known(row)
     ? node('span', `Ya conocida · ${row.matched_koi_name || 'KOI'}${row.known_disposition ? ' · ' + row.known_disposition : ''}`, 'tag known')
-    : node('span', 'Señal nueva', 'tag new'));
+    : knownToi
+      ? node('span', `Ya conocida · ${row.matched_toi_name}${row.known_toi_disposition ? ' · ' + row.known_toi_disposition : ''}`, 'tag known')
+      : node('span', 'Señal nueva', 'tag new'));
   box.append(head);
   const facts = node('dl', null, 'facts');
   for (const [label, value] of [['Periodo', fixed(row.period_days, 4) + ' d'], ['Profundidad', fixed(row.depth_ppm, 0) + ' ppm'],
@@ -103,8 +126,8 @@ function render(data) {
     kpi(labels.prioritario || 0, 'prioritarias'),
     kpi(labels.revisar || 0, 'a revisar'),
     kpi(data.watchlist.length, 'en seguimiento'),
-    kpi(data.model ? 'AUC ' + Number(data.model.roc_auc).toFixed(2) : 'sin modelo', 'modelo RF',
-        data.model ? `acierto ${Math.round(data.model.accuracy * 100)} % en test` : 'entrénalo desde Control'),
+    kpi(data.model ? 'AUC ' + Number(data.model.roc_auc).toFixed(2) : 'sin modelo', 'modelo RF (Kepler)',
+        data.model ? (mission === 'tess' ? 'orientativo en TESS' : `acierto ${Math.round(data.model.accuracy * 100)} % en test`) : 'entrénalo desde Control'),
   );
   $('no-model').hidden = !data.without_model;
   $('no-model').textContent = data.without_model
@@ -116,7 +139,9 @@ function render(data) {
   $('priority-count').textContent = `${priority.length} señal(es)`;
   $('review-count').textContent = `${review.length} señal(es)`;
   $('priority').replaceChildren(...priority.map(row => card(row, watched.has(row.kic))));
-  if (!priority.length) $('priority').append(node('p', 'Todavía ninguna. Con el modelo entrenado, las nuevas estrellas analizadas pueden aparecer aquí.', 'muted empty'));
+  if (!priority.length) $('priority').append(node('p', mission === 'tess'
+    ? 'En TESS no se marcan prioritarias automáticamente: revisa las señales de abajo.'
+    : 'Todavía ninguna. Con el modelo entrenado, las nuevas estrellas analizadas pueden aparecer aquí.', 'muted empty'));
   $('review').replaceChildren(...review.slice(0, reviewLimit).map(row => card(row, watched.has(row.kic))));
   if (!review.length) $('review').append(node('p', 'Nada pendiente de revisar.', 'muted empty'));
   $('review-more').hidden = review.length <= reviewLimit;
@@ -126,7 +151,7 @@ function render(data) {
   for (const entry of data.watchlist) {
     const row = node('div', null, 'watch-row');
     const text = node('div');
-    text.append(node('strong', `KIC ${entry.kic}`), node('span', entry.note || 'sin nota', 'muted small'));
+    text.append(node('strong', starName(entry.kic)), node('span', entry.note || 'sin nota', 'muted small'));
     const actions = node('div', null, 'actions');
     if (entry.job) actions.append(openLink(entry.job, entry.kic));
     else actions.append(node('span', 'aún sin analizar', 'muted small'));
@@ -141,7 +166,7 @@ function render(data) {
 async function refresh() {
   try {
     if (!token) token = (await api('/api/state')).token;
-    render(await api('/api/overview'));
+    render(await api('/api/overview?mission=' + mission));
     msg('');
   } catch (error) {
     msg('No se pudo actualizar: ' + error.message);
@@ -159,5 +184,11 @@ $('watch-form').onsubmit = async event => {
 };
 $('review-more').onclick = () => { reviewLimit += 12; render(lastOverview); };
 
-refresh();
+loadMode().then(() => {
+  $('home-eyebrow').textContent = mission === 'tess' ? 'RESUMEN DEL OBSERVATORIO · TESS' : 'RESUMEN DEL OBSERVATORIO · KEPLER';
+  $('watch-kic').placeholder = PREFIX[mission];
+  if (mission === 'tess') document.querySelector('#priority').closest('.card').querySelector('p.muted').textContent =
+    'En TESS el modelo es el de Kepler (no calibrado): ninguna señal sale como prioritaria sin revisión. Mira "A revisar".';
+  refresh();
+});
 setInterval(refresh, 20000);

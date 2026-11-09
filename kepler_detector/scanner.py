@@ -19,6 +19,7 @@ from .utils import setup, fingerprint, file_hash, atomic_csv, atomic_json
 from . import FEATURE_VERSION, PIPELINE_VERSION
 from . import plotting
 from . import missions
+from .tess import match_toi
 
 
 def _local_bls_power(curve, candidate):
@@ -137,7 +138,9 @@ def signature(root, config, no_model=False, mission='kepler'):
                         'cnn_model': file_hash(cnn_model) if cnn_model.exists() and not no_model else None,
                         'cnn_metadata': file_hash(cnn_metadata) if cnn_metadata.exists() and not no_model else None,
                         'catalog': file_hash(catalog) if catalog.exists() else None,
-                        **({'mission': mission} if mission != 'kepler' else {})})
+                        **({'mission': mission} if mission != 'kepler' else {}),
+                        **({'toi_catalog': file_hash(root / 'data/tess_toi.csv')
+                            if (root / 'data/tess_toi.csv').exists() else None} if mission == 'tess' else {})})
 
 
 def scan(root, kic, config, force=False, no_model=False, semaphore=None, mission='kepler'):
@@ -190,7 +193,9 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None, mission
     if config.save_curves:
         save_curve(raw, output / 'original.npz')
         save_curve(curve, output / 'detrended.npz')
-    catalog = tce_catalog = None
+    catalog = tce_catalog = toi_catalog = None
+    if mission == 'tess' and (root / 'data/tess_toi.csv').exists():
+        toi_catalog = pd.read_csv(root / 'data/tess_toi.csv')
     if mission == 'kepler':  # KOI/TCE DR25 sólo describen estrellas Kepler.
         catalog_path = root / 'data/koi_dr25.csv'
         catalog = pd.read_csv(catalog_path) if catalog_path.exists() else None
@@ -241,7 +246,8 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None, mission
                'cnn_probability': cnn_probability, 'cnn_available': cnn_predictor is not None,
                **vetting,
                'priority_score': priority_score(combined, rf, vetting['vetting_flags']),
-               **match(kic, selected.period, catalog, config.match_tolerance, tce_catalog)}
+               **match(kic, selected.period, catalog, config.match_tolerance, tce_catalog),
+               **(match_toi(kic, selected.period, toi_catalog, config.match_tolerance) if mission == 'tess' else {})}
         row['plot_file'] = f'candidate_{iteration + 1:02d}_folded.png'
         plotting.folded(residual, selected, row, output / row['plot_file'], name)
         repeated = any(duplicate(selected, previous, curve.time) for previous in found)

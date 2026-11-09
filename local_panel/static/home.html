@@ -9,11 +9,11 @@
   <script src="/home.js" defer></script>
 </head>
 <body>
-<header><a class="brand" href="/">KEPLER <span>OBSERVATORY</span></a><nav class="topnav"><a href="/" class="active">Resumen</a><a href="/control">Control de análisis</a></nav><span class="badge" id="status-badge">● CARGANDO</span></header>
+<header><a class="brand" href="/">KEPLER <span>OBSERVATORY</span></a><nav class="topnav"><a href="/" class="active">Resumen</a><a href="/control">Control de análisis</a></nav><div class="mode-switch" role="group" aria-label="Misión"><button type="button" data-mission="kepler">Kepler</button><button type="button" data-mission="tess">TESS</button></div><span class="badge" id="status-badge">● CARGANDO</span></header>
 <main>
   <section class="intro home-intro">
     <div>
-      <p class="eyebrow">RESUMEN DEL OBSERVATORIO</p>
+      <p class="eyebrow" id="home-eyebrow">RESUMEN DEL OBSERVATORIO</p>
       <h1>Estrellas a <em>seguir</em></h1>
       <p class="muted">Lo más interesante de todo lo analizado, en todos los lotes y equipos. Es una selección para revisar a mano, no una confirmación de planetas.</p>
     </div>
@@ -32,7 +32,7 @@
   <section class="card">
     <div class="row"><div><p class="eyebrow">MI SEGUIMIENTO</p><h2>Estrellas marcadas</h2></div></div>
     <form id="watch-form" class="watch-form">
-      <input id="watch-kic" inputmode="numeric" placeholder="KIC" aria-label="KIC a seguir">
+      <input id="watch-kic" inputmode="numeric" placeholder="KIC" aria-label="Estrella a seguir">
       <input id="watch-note" placeholder="Nota (opcional): por qué la sigues" aria-label="Nota">
       <button type="submit">☆ Seguir</button>
     </form>

@@ -24,7 +24,9 @@ async function api(path, data) {
 function msg(text) { $('message').textContent = text; }
 function node(tag, text) { const element = document.createElement(tag); element.textContent = text; return element; }
 
+let currentMission = 'kepler';
 async function results(state) {
+  currentMission = state.mission || 'kepler';
   const kic = $('stars').value;
   const key = `${state.id}/${kic}/${state.stars[kic]}`;
   if (key === resultKey) return;
@@ -125,7 +127,7 @@ function figure(url, caption, className) {
 
 function renderCurves(job, kic, rows) {
   const base = `/files/${job}/${kic}/`;
-  $('curves-title').textContent = `KIC ${kic}`;
+  $('curves-title').textContent = starName(kic, currentMission);
   const plotted = rows.filter(row => /^candidate_[0-9]+_folded\.png$/.test(row.plot_file || ''));
   for (const row of plotted) {
     const period = Number(row.period_days);
@@ -142,12 +144,32 @@ function renderCurves(job, kic, rows) {
 }
 
 let clusterEnabled = false;
+
+// ---- Selector Kepler | TESS (compartido por las dos páginas) ----
+let mission = 'kepler';
+const PREFIX = {kepler: 'KIC', tess: 'TIC'};
+const starName = (id, m) => `${PREFIX[m || mission] || 'KIC'} ${id}`;
+async function loadMode() {
+  const response = await fetch('/api/settings');
+  mission = (await response.json()).mission || 'kepler';
+  document.body.dataset.mission = mission;
+  for (const button of document.querySelectorAll('.mode-switch button')) {
+    button.classList.toggle('on', button.dataset.mission === mission);
+    button.onclick = async () => {
+      if (button.dataset.mission === mission) return;
+      if (!token) token = (await (await fetch('/api/state')).json()).token;
+      const result = await fetch('/api/settings', {method: 'POST', headers: {'Content-Type': 'application/json',
+        'X-Panel-Token': token}, body: JSON.stringify({mission: button.dataset.mission})});
+      if (result.ok) location.href = location.pathname;  // Recargar en el nuevo modo.
+    };
+  }
+}
 function renderCluster(cluster) {
   clusterEnabled = !!cluster.enabled;
   $('cluster-off').hidden = clusterEnabled;
   $('cluster-on').hidden = !clusterEnabled;
   $('distributed-label').hidden = !clusterEnabled;
-  $('train-card').hidden = !clusterEnabled;
+  $('train-card').hidden = !clusterEnabled || mission !== 'kepler';
   $('mode-badge').textContent = clusterEnabled ? '● RED LOCAL ACTIVA' : '● SOLO EN ESTE ORDENADOR';
   if (!clusterEnabled) return;
   const addresses = (cluster.addresses.length ? cluster.addresses : ['IP-de-este-PC']).map(a => `${a}:${cluster.port}`);
@@ -161,13 +183,14 @@ function renderCluster(cluster) {
     row.className = 'helper';
     const name = node('span', `${helper.online ? '🟢' : '⚪'} ${helper.name}`);
     if (!helper.online) name.className = 'off';
-    const current = helper.current ? 'KIC ' + helper.current.split(':')[1] : (helper.online ? 'esperando' : 'desconectado');
+    const current = helper.current ? 'estrella ' + helper.current.split(':')[1] : (helper.online ? 'esperando' : 'desconectado');
     row.append(name, node('span', `${current} · ${helper.completed} hechas${helper.failed ? ` · ${helper.failed} fallos` : ''}`));
     $('cluster-helpers').append(row);
   }
 }
 
 function renderDiscovery(discovery, cnnRunning) {
+  $('discovery-eyebrow').textContent = mission === 'tess' ? 'DESCUBRIMIENTO TESS · 2 MIN SIN TOI' : 'DESCUBRIMIENTO KEPLER';
   const active = discovery.enabled;
   const next = discovery.next_batch || 1;
   const total = discovery.total_batches || 25;
@@ -273,7 +296,7 @@ async function refresh() {
     const seriousKics = new Set((state.triage?.serious || []).map(item => Number(item.kic)));
     for (const kic of ids) {
       const who = (state.assigned || {})[kic] || (state.done_by || {})[kic];
-      const option = node('option', `${seriousKics.has(Number(kic)) ? '✦ ' : ''}KIC ${kic} · ${labels[state.stars[kic]] || state.stars[kic]}${who ? ' · ' + who : ''}${kic === state.control ? ' (control)' : ''}`);
+      const option = node('option', `${seriousKics.has(Number(kic)) ? '✦ ' : ''}${starName(kic, state.mission || 'kepler')} · ${labels[state.stars[kic]] || state.stars[kic]}${who ? ' · ' + who : ''}${kic === state.control ? ' (control)' : ''}`);
       option.value = kic;
       $('stars').append(option);
     }
@@ -399,5 +422,12 @@ if (document.modelContext?.registerTool) {
   } catch {}
 }
 
-refresh();
+loadMode().then(() => {
+  if (mission === 'tess') {
+    $('kics-label').textContent = 'Identificadores TIC (TESS)';
+    $('kics').placeholder = '25155310, 261136679';
+    $('kics-hint').textContent = 'Uno o varios TIC. Se analizan todos los sectores con curvas SPOC de 2 min (o FFI si no hay). El modelo RF es de Kepler: orientativo.';
+  }
+  refresh();
+});
 setInterval(refresh, 3000);

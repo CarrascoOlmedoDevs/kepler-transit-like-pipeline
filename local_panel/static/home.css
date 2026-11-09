@@ -34,3 +34,7 @@
 .watch-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--edge)}
 .watch-row strong{display:block}
 @media(max-width:850px){.topnav{display:none}.facts{grid-template-columns:repeat(2,1fr)}.watch-form{grid-template-columns:1fr}}
+.mode-switch{display:flex;border:1px solid var(--edge);border-radius:9px;overflow:hidden;margin-right:14px}
+.mode-switch button{background:transparent;color:var(--muted);border:0;border-radius:0;padding:7px 14px;font-weight:600}
+.mode-switch button.on{background:var(--cyan);color:#062423}
+body[data-mission="tess"] .brand{color:#ffd59a}

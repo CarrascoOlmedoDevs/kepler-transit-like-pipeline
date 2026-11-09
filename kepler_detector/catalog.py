@@ -140,22 +140,24 @@ def discovery_targets(root, limit=250, force_catalog=False):
     return selected
 
 
-def discovery_batches(root, batch_size=10):
-    """Split the saved discovery queue into deterministic, auditable CSV batches."""
+def discovery_batches(root, batch_size=10, source=None, output=None, id_column='kepid'):
+    """Split the saved discovery queue into deterministic, auditable CSV batches.
+    Kepler por defecto; TESS pasa su cola, carpeta y columna `tic`."""
     root = Path(root)
     if batch_size < 1:
         raise ValueError('batch_size debe ser positivo')
-    source = root / 'data/kepler_discovery_targets.csv'
+    source = Path(source) if source else root / 'data/kepler_discovery_targets.csv'
     if not source.exists():
-        raise FileNotFoundError('Falta data/kepler_discovery_targets.csv')
+        raise FileNotFoundError(f'Falta {source.name}')
     frame = pd.read_csv(source)
-    required = {'queue_rank', 'kepid'}
+    required = {'queue_rank', id_column}
     if frame.empty or not required.issubset(frame.columns):
-        raise ValueError('La cola de descubrimiento no contiene queue_rank/kepid')
-    if frame.queue_rank.duplicated().any() or frame.kepid.duplicated().any():
-        raise ValueError('La cola contiene queue_rank o kepid duplicados')
+        raise ValueError(f'La cola de descubrimiento no contiene queue_rank/{id_column}')
+    if frame.queue_rank.duplicated().any() or frame[id_column].duplicated().any():
+        raise ValueError(f'La cola contiene queue_rank o {id_column} duplicados')
+    frame = frame.rename(columns={id_column: 'kepid'}) if id_column != 'kepid' else frame
 
-    output = root / 'data/discovery_batches'
+    output = Path(output) if output else root / 'data/discovery_batches'
     output.mkdir(parents=True, exist_ok=True)
     previous_path = output / 'manifest.csv'
     previous = {}
@@ -170,7 +172,7 @@ def discovery_batches(root, batch_size=10):
         batch = frame.iloc[offset:offset + batch_size].copy()
         filename = f'batch_{number:02d}.csv'
         path = output / filename
-        atomic_csv(batch, path)
+        atomic_csv(batch.rename(columns={'kepid': id_column}), path)
         old = previous.get(filename)
         same_batch = (old is not None and int(old.start_rank) == int(batch.queue_rank.iloc[0])
                       and int(old.end_rank) == int(batch.queue_rank.iloc[-1])
@@ -228,9 +230,9 @@ def replenish_discovery_batches(root, block_size=250, batch_size=10):
             'total_targets': len(selected), 'total_batches': len(manifest)}
 
 
-def update_discovery_batch_status(root, batch_index, status, completed_stars):
+def update_discovery_batch_status(root, batch_index, status, completed_stars, folder='data/discovery_batches'):
     """Atomically persist panel progress in the discovery manifest."""
-    path = Path(root) / 'data/discovery_batches/manifest.csv'
+    path = Path(root) / folder / 'manifest.csv'
     if not path.exists():
         return
     manifest = pd.read_csv(path)

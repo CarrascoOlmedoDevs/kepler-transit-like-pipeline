@@ -151,9 +151,11 @@ def process(client, root, task):
     if task.get('task') == 'build':
         return process_build(client, root, task, stop, started)
     try:
-        log.info('KIC %s: analizando…', kic)
-        scan(root, kic, Config(), no_model=task.get('no_model', False))
-        folder = root / 'results' / f'KIC_{kic}'
+        from kepler_detector import missions
+        info = missions.get(task.get('mission', 'kepler'))
+        log.info('%s: analizando…', info.label(kic))
+        scan(root, kic, Config(), no_model=task.get('no_model', False), mission=info.key)
+        folder = root / 'results' / info.folder(kic)
         meta = json.loads((folder / 'metadata.json').read_text(encoding='utf-8'))
         if meta.get('signature') != task['signature']:
             raise RuntimeError('La firma del análisis no coincide con la del coordinador '
@@ -230,7 +232,7 @@ def run_worker(server, token, helper, name, root, idle_exit=False, max_tasks=Non
     done, idle, current = 0, 0, None
     try:
         while max_tasks is None or done < max_tasks:
-            task = retrying(lambda: client.post('/cluster/v1/claim', caps=['build']), 'pedir trabajo', attempts=1000)
+            task = retrying(lambda: client.post('/cluster/v1/claim', caps=['build', 'missions']), 'pedir trabajo', attempts=1000)
             if not task.get('job'):
                 if idle_exit:
                     break

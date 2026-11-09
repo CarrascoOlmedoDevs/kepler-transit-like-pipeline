@@ -10,13 +10,13 @@
   <script src="/app.js" defer></script>
 </head>
 <body>
-<header><a class="brand" href="/">KEPLER <span>OBSERVATORY</span></a><nav class="topnav"><a href="/">Resumen</a><a href="/control" class="active">Control de análisis</a></nav><span class="badge" id="mode-badge">● SOLO EN ESTE ORDENADOR</span></header>
+<header><a class="brand" href="/">KEPLER <span>OBSERVATORY</span></a><nav class="topnav"><a href="/">Resumen</a><a href="/control" class="active">Control de análisis</a></nav><div class="mode-switch" role="group" aria-label="Misión"><button type="button" data-mission="kepler">Kepler</button><button type="button" data-mission="tess">TESS</button></div><span class="badge" id="mode-badge">● SOLO EN ESTE ORDENADOR</span></header>
 <main>
   <div class="intro"><div><p class="eyebrow">CENTRO DE OPERACIONES</p><h1>Control de análisis</h1><p class="muted">Curvas, colas y resultados en este ordenador. Parámetros científicos sin cambios.</p></div></div>
   <p id="message" role="status" aria-live="polite"></p>
   <div class="layout">
     <aside>
-      <section class="card"><h2>Nuevo análisis</h2><form id="create"><label for="kics">Identificadores KIC</label><textarea id="kics" placeholder="10854555, 757450" required></textarea><p class="muted small">Uno o varios KIC, separados por espacios o comas. Se utiliza la configuración actual del scanner.</p><label class="check" id="distributed-label" hidden><input type="checkbox" id="distributed"> Repartir entre los equipos de la red</label><button type="submit" id="start">＋ Iniciar análisis</button></form></section>
+      <section class="card"><h2>Nuevo análisis</h2><form id="create"><label for="kics" id="kics-label">Identificadores KIC</label><textarea id="kics" placeholder="10854555, 757450" required></textarea><p class="muted small" id="kics-hint">Uno o varios KIC, separados por espacios o comas. Se utiliza la configuración actual del scanner.</p><label class="check" id="distributed-label" hidden><input type="checkbox" id="distributed"> Repartir entre los equipos de la red</label><button type="submit" id="start">＋ Iniciar análisis</button></form></section>
       <section class="card" id="train-card" hidden>
         <p class="eyebrow">MODELO</p><h2>Entrenar RF repartido</h2>
         <p class="muted small">Los equipos miden KOI conocidos (planetas candidatos y falsos positivos) y este PC entrena el modelo. Con 500 por clase son unas 800 estrellas.</p>
@@ -35,7 +35,7 @@
         </div>
       </section>
       <section class="card">
-        <p class="eyebrow">DESCUBRIMIENTO</p><h2>25 lotes de 10</h2>
+        <p class="eyebrow" id="discovery-eyebrow">DESCUBRIMIENTO</p><h2 id="discovery-title">Lotes de 10 estrellas</h2>
         <p id="discovery-note" class="muted small">Preparado para continuar lote a lote.</p>
         <div class="actions"><button id="discovery-start">▶ Automatizar</button><button id="discovery-add" class="secondary">＋ Preparar 250 más</button><button id="discovery-stop" class="danger">Detener secuencia</button></div>
       </section>
@@ -45,7 +45,7 @@
     <div>
       <section class="card">
         <div class="row"><div><p class="eyebrow">SESIÓN SELECCIONADA</p><h2 id="title">Cargando…</h2></div><span id="status" class="badge"></span></div>
-        <div class="stats"><div><strong id="done">—</strong><span>completadas</span></div><div><strong id="total">—</strong><span>estrellas en la cola</span></div><div><strong id="current">—</strong><span>KIC en curso</span></div><div><strong id="serious">0</strong><span>señales prioritarias</span></div></div>
+        <div class="stats"><div><strong id="done">—</strong><span>completadas</span></div><div><strong id="total">—</strong><span>estrellas en la cola</span></div><div><strong id="current">—</strong><span>estrella en curso</span></div><div><strong id="serious">0</strong><span>señales prioritarias</span></div></div>
         <progress id="progress" value="0" max="1"></progress><p id="note" class="muted small"></p>
         <div class="actions"><button id="resume">▶ Continuar</button><button id="pause" class="secondary">Ⅱ Pausar</button><button id="stop" class="danger">■ Detener</button></div>
       </section>

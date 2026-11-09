@@ -43,7 +43,7 @@ def prepare_scan(root, work, ids):
     for name in ('models/kepler_rf.joblib',
                  'models/kepler_exominer_lite.keras',
                  'models/kepler_exominer_lite_metadata.json',
-                 'data/koi_dr25.csv', 'data/tce_dr25.csv'):
+                 'data/koi_dr25.csv', 'data/tce_dr25.csv', 'data/tess_toi.csv'):
         source = root / name
         if source.exists() and not (work / name).exists():
             shutil.copy2(source, work / name)
@@ -89,6 +89,8 @@ def run(root, job):
     lock = None
     try:
         blind = state['kind'] == 'blind'
+        from kepler_detector import missions
+        mission = state.get('mission') or 'kepler'
         if blind:
             import evaluate_blind as evaluation
             out = root / 'results/blind_evaluation'
@@ -113,14 +115,14 @@ def run(root, job):
                 break
             archive_dir = folder / 'history' / f'{kic}-{time.time_ns()}'
             if state['stars'][str(kic)] in ('interrupted', 'running'):
-                archive(work / f'results/KIC_{kic}', archive_dir)
+                archive(work / 'results' / missions.get(mission).folder(kic), archive_dir)
                 if blind:
                     archive(out / f'attempts/{kic}.json', archive_dir)
                 write(archive_dir / 'resume.json', dict(kepid=kic, reason='Explicit user continuation', time=time.time()))
             state['stars'][str(kic)] = 'running'
             state.update(current=kic, status='running')
             write(folder / 'state.json', state)
-            print(f'INICIO KIC {kic}', flush=True)
+            print(f'INICIO {missions.get(mission).label(kic)}', flush=True)
             if blind:
                 result = evaluation.scan_worker(str(work), kic, config)
                 status = result['status']
@@ -133,7 +135,7 @@ def run(root, job):
                           'con BLS y vetting, sin probabilidades RF/CNN ni marca de "prioritario".', flush=True)
                     state['no_model_warned'] = True
                 try:
-                    scan(work, kic, Config(), no_model=no_model)
+                    scan(work, kic, Config(), no_model=no_model, mission=mission)
                     status = 'complete'
                 except Exception:
                     traceback.print_exc()
@@ -144,11 +146,12 @@ def run(root, job):
             if status == 'complete':
                 try:
                     from kepler_detector.evidence import record_serious_evidence
-                    record_serious_evidence(root, job, kic, work / f'results/KIC_{kic}')
+                    if mission == 'kepler':  # El informe de evidencias es el de Kepler.
+                        record_serious_evidence(root, job, kic, work / f'results/KIC_{kic}')
                 except Exception as error:
                     # The scientific result remains valid if the convenience report cannot be written.
                     print(f'AVISO informe de evidencias KIC {kic}: {error}', flush=True)
-            print(f'FIN KIC {kic}: {status}', flush=True)
+            print(f'FIN {missions.get(mission).label(kic)}: {status}', flush=True)
         else:
             if blind:
                 seconds = sum((evaluation.existing_attempt(out, k) or {}).get('seconds', 0) for k in state['ids'])

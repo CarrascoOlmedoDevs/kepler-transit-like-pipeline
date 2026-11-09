@@ -278,7 +278,7 @@ class Manager:
                 files = self._batch_files()
                 automation['total_batches'] = len(files)
                 automation['note'] = 'Reserva ampliada automaticamente con 25 lotes nuevos.'
-            except ValueError as error:
+            except Exception as error:  # red caida o archivo NASA no disponible: seguir con los lotes que ya hay
                 automation['note'] = f'No se pudo ampliar la reserva: {error}'
             write(self.folder / 'discovery_automation.json', automation)
         if number > len(files):

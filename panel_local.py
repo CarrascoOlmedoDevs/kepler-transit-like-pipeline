@@ -84,7 +84,8 @@ def make_server(root=ROOT, port=8768, manager=None):
                 if len(parts) == 4 and parts[0] == 'files':
                     target = manager.result_path(parts[1], parts[2], parts[3])
                 elif path in ('/', '/control', '/app.js', '/home.js', '/sky.js', '/style.css', '/triage.css',
-                              '/home.css', '/favicon.svg') or re.fullmatch(r'/fonts/[a-z0-9-]+\.woff2', path):
+                              '/home.css', '/favicon.svg') or re.fullmatch(r'/fonts/[a-z0-9-]+\.woff2', path) \
+                        or re.fullmatch(r'/img/[a-z0-9-]+\.jpg', path):
                     page = {'/': 'home.html', '/control': 'index.html'}.get(path, path[1:])
                     target = Path(root) / 'local_panel/static' / page
                 else:

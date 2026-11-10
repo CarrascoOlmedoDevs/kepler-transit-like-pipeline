@@ -15,7 +15,12 @@
 .hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:36px;align-items:center;padding:30px 0 34px}
 .hero h1{font-size:clamp(40px,5.6vw,72px)}
 .lede{font-size:17px;line-height:1.6;color:#c6cff0;max-width:54ch;margin:0 0 28px}
-.hero-art{margin:0;position:relative}
+.hero-art{margin:0;position:relative;isolation:isolate}
+.hero-art::before{content:"";position:absolute;inset:-6% -8% 8%;z-index:-1;background:center/cover no-repeat;opacity:0;
+  -webkit-mask-image:radial-gradient(closest-side,#000 45%,transparent 100%);mask-image:radial-gradient(closest-side,#000 45%,transparent 100%);
+  transition:opacity .8s ease}
+.hero-art[data-art="kepler"]::before{background-image:url("/img/kepler-field.jpg");opacity:.5;transform:rotate(-8deg)}
+.hero-art[data-art="tess"]::before{background-image:url("/img/tess-south.jpg");opacity:.55}
 .hero-art canvas{display:block;width:100%;aspect-ratio:1/0.95}
 .hero-art figcaption{font-size:12.5px;color:var(--muted);text-align:center;margin-top:4px}
 

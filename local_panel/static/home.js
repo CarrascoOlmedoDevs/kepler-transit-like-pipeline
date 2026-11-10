@@ -223,7 +223,23 @@ async function refresh() {
 
 $('review-more').onclick = () => { reviewLimit += 12; render(lastOverview); };
 
+// Fondo real de la misión (imágenes de la NASA descargadas con DESCARGAR_IMAGENES_NASA.bat).
+const ART = {
+  kepler: {file: '/img/kepler-field.jpg', credit: 'Fondo: campo de visión de Kepler. NASA/Ames/JPL-Caltech.'},
+  tess: {file: '/img/tess-south.jpg', credit: 'Fondo: cielo austral de TESS. NASA/MIT/TESS y Ethan Kruse (USRA).'},
+};
+function loadArt() {
+  const art = ART[mission];
+  const probe = new Image();
+  probe.onload = () => {
+    document.querySelector('.hero-art').dataset.art = mission;
+    $('art-credit').textContent = ' ' + art.credit;
+  };
+  probe.src = art.file;
+}
+
 loadMode().then(() => {
+  loadArt();
   $('home-eyebrow').textContent = mission === 'tess' ? 'Resumen del observatorio en TESS' : 'Resumen del observatorio en Kepler';
   refresh();
 });

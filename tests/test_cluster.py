@@ -283,3 +283,48 @@ class TrainingResultTests(ClusterBase):
         state = read(self.root / 'results/local_panel/abcdef0123456789/state.json')
         self.assertEqual(state['stars']['5'], 'pending')
         self.assertEqual(state['attempts']['5'], 1)
+
+
+class SelfUpdateTests(ClusterBase):
+    def client(self):
+        return ayudante.Client(self.url, self.cluster.token, 'aaaaaaaa11111111', 'PC')
+
+    def test_helper_downloads_only_what_differs(self):
+        import hashlib
+        target = Path(self.tmp.name) / 'ayudante_codigo'
+        changed = ayudante.sync_code(self.client(), target)
+        self.assertEqual(set(changed), set(self.cluster.code_manifest))
+        self.assertIn('ayudante.py', changed)
+        self.assertNotIn('AYUDAR.bat', changed)          # Nunca se reescribe el .bat en ejecución
+        self.assertFalse(any(name.startswith(('results', 'data', 'models')) for name in changed))
+        for name, digest in self.cluster.code_manifest.items():
+            self.assertEqual(hashlib.sha256((target / name).read_bytes()).hexdigest(), digest)
+        self.assertEqual(ayudante.sync_code(self.client(), target), [])
+        (target / 'config.py').write_text('# antiguo', encoding='utf-8')
+        self.assertEqual(ayudante.sync_code(self.client(), target), ['config.py'])
+        self.assertFalse(list(target.rglob('*.nuevo')))
+
+    def test_unexpected_paths_and_corrupt_files_are_refused(self):
+        target = Path(self.tmp.name) / 'ayudante_codigo'
+        self.cluster.code_manifest['../fuera.py'] = 'x'
+        with self.assertRaises(ConnectionError):
+            ayudante.sync_code(self.client(), target)
+        del self.cluster.code_manifest['../fuera.py']
+        self.cluster.code_manifest['config.py'] = '0' * 64   # hash que no coincide con el contenido
+        with self.assertRaises(ConnectionError):
+            ayudante.sync_code(self.client(), target)
+        self.assertFalse(target.exists() and any(target.rglob('*.py')))  # nada a medias
+
+    def test_worker_asks_to_restart_when_coordinator_version_changes(self):
+        job = self.manager.create('123', distributed=True)
+        real_claim = self.cluster.claim
+
+        def claim_then_upgrade(*args, **kwargs):
+            task = real_claim(*args, **kwargs)
+            self.cluster.code_version = 'versionnueva0000'  # el panel se reinició con código nuevo
+            return task
+        with patch.object(self.cluster, 'claim', side_effect=claim_then_upgrade):
+            with self.assertRaises(ayudante.Restart):
+                self.helper()
+        # La estrella que le tocó vuelve a la cola, no se pierde.
+        self.assertEqual(read(self.root / f'results/local_panel/{job}/state.json')['stars']['123'], 'pending')

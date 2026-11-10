@@ -161,6 +161,11 @@ reparte las estrellas con KOI etiquetados de DR25. Cada ayudante mide sus KOI (l
 `evaluate`. El modelo nuevo se sincroniza solo con los ayudantes. Con 500 por clase y 6 PCs se
 midieron 977 estrellas en unas 2 horas.
 
+Actualización automática: al reiniciar el panel con código nuevo, los ayudantes lo detectan al
+pedir la siguiente estrella, descargan del coordinador sólo los archivos que cambian (cada uno
+verificado por sha256), instalan dependencias si `requirements.txt` cambió y se relanzan solos.
+No hace falta volver a copiar la carpeta. `AYUDAR.bat` es el único archivo que no se actualiza así.
+
 Seguridad: el panel sigue escuchando sólo en `127.0.0.1`; los ayudantes hablan con un servidor
 aparte (puerto 8769) que exige el token. Es para tu red local: no abras ese puerto a internet.
 El protocolo (`local_panel/cluster.py`, v1) está preparado para crecer a voluntarios por

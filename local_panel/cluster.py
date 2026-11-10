@@ -7,6 +7,7 @@ cada envío antes de aceptarlo. Protocolo pensado para crecer después a interne
 (HTTPS + un token por voluntario + validación cruzada)."""
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import io
+from pathlib import Path
 import json
 import re
 import secrets
@@ -50,6 +51,32 @@ def lan_addresses():
     return sorted(a for a in found if not a.startswith('127.'))
 
 
+# Código que el coordinador reparte a los ayudantes para que se actualicen solos.
+# AYUDAR.bat queda fuera: Windows no tolera reescribir un .bat mientras se ejecuta.
+CODE_FILE = re.compile(r'(?!AYUDAR\.bat$)(?:[A-Za-z0-9_]+\.(?:py|bat)|requirements[a-z-]*\.txt|'
+                       r'(?:kepler_detector|local_panel)/[A-Za-z0-9_]+\.py|'
+                       r'local_panel/static/[A-Za-z0-9_.-]+\.(?:html|js|css|svg)|'
+                       r'local_panel/static/fonts/[A-Za-z0-9_.-]+\.(?:woff2|txt))')
+CODE_ROOT = Path(__file__).resolve().parent.parent
+
+
+def code_snapshot(root=CODE_ROOT):
+    """{ruta: bytes} del código repartible, tal como está en disco ahora."""
+    files = {}
+    for pattern in ('*.py', '*.bat', 'requirements*.txt', 'kepler_detector/*.py', 'local_panel/*.py',
+                    'local_panel/static/*', 'local_panel/static/fonts/*'):
+        for path in sorted(Path(root).glob(pattern)):
+            name = path.relative_to(root).as_posix()
+            if path.is_file() and CODE_FILE.fullmatch(name):
+                files[name] = path.read_bytes()
+    return files
+
+
+def code_version(manifest):
+    import hashlib
+    return hashlib.sha256(json.dumps(manifest, sort_keys=True).encode()).hexdigest()[:16]
+
+
 class SignatureChanged(ValueError):
     pass
 
@@ -69,6 +96,12 @@ class Cluster:
         settings.setdefault('distribute_discovery', False)
         write(self.settings_path, settings)
         self.settings = settings
+        # Foto del código al arrancar: lo que se reparte es lo que este proceso ejecuta,
+        # aunque los archivos del disco cambien después (hasta el próximo reinicio).
+        import hashlib
+        self.code = code_snapshot()
+        self.code_manifest = {name: hashlib.sha256(content).hexdigest() for name, content in self.code.items()}
+        self.code_version = code_version(self.code_manifest)
         self.leases = {}                  # (job, kic) -> {helper, expires}
         self.helpers = {}                 # helper_id -> estado visible en el panel
         self._hashes = {}
@@ -122,7 +155,7 @@ class Cluster:
                     pipeline_version=PIPELINE_VERSION, feature_version=FEATURE_VERSION,
                     feature_schema_hash=FEATURE_SCHEMA_HASH, config=Config().to_dict(),
                     no_model=self.no_model(), assets=self.assets(),
-                    lease_seconds=self.lease_seconds)
+                    lease_seconds=self.lease_seconds, code_version=self.code_version)
 
     def _name(self, state, kic):
         return self._label(state.get('mission', 'kepler'), kic)
@@ -480,6 +513,18 @@ class Cluster:
                 try:
                     if path == '/cluster/v1/info':
                         return self.reply(cluster.info())
+                    if path == '/cluster/v1/code':
+                        return self.reply(dict(version=cluster.code_version, files=cluster.code_manifest))
+                    if path.startswith('/cluster/v1/code/'):
+                        content = cluster.code.get(path[len('/cluster/v1/code/'):])
+                        if content is None:
+                            return self.reply({'error': 'No encontrado'}, 404)
+                        self.send_response(200)
+                        self.send_header('Content-Type', 'application/octet-stream')
+                        self.send_header('Content-Length', str(len(content)))
+                        self.end_headers()
+                        self.wfile.write(content)
+                        return
                     if path.startswith('/cluster/v1/assets/'):
                         name = path[len('/cluster/v1/assets/'):]
                         if name not in ASSETS or not (cluster.root / name).is_file():
@@ -514,7 +559,7 @@ class Cluster:
                     if path == '/cluster/v1/claim':
                         caps = data.get('caps') if isinstance(data.get('caps'), list) else []
                         task = cluster.claim(helper, data.get('name'), address, caps)
-                        return self.reply(task or {'task': None})
+                        return self.reply({**(task or {'task': None}), 'code_version': cluster.code_version})
                     if path == '/cluster/v1/build_result':
                         return self.reply(cluster.submit_build(helper, str(data.get('job')), data.get('kic'),
                                                                data.get('results'), data.get('name')))

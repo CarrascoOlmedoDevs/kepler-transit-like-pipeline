@@ -7,12 +7,16 @@ import csv
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import mimetypes
+import re
 from pathlib import Path
 import secrets
 import threading
 from urllib.parse import urlsplit
 import webbrowser
 from local_panel.jobs import Manager
+
+mimetypes.add_type('font/woff2', '.woff2')
+mimetypes.add_type('image/svg+xml', '.svg')
 
 ROOT = Path(__file__).resolve().parent
 
@@ -61,6 +65,10 @@ def make_server(root=ROOT, port=8768, manager=None):
                     return self.send(manager.cnn_details())
                 if path == '/api/discovery':
                     return self.send(manager.discovery_details())
+                if path == '/api/settings':
+                    return self.send({'mission': manager.mode()})
+                if path == '/api/overview':
+                    return self.send(manager.overview())
                 if path == '/api/cluster':
                     return self.send(manager.cluster.details() if manager.cluster else {'enabled': False})
                 if len(parts) == 3 and parts[:2] == ['api', 'jobs']:
@@ -75,8 +83,11 @@ def make_server(root=ROOT, port=8768, manager=None):
                         return self.send(rows)
                 if len(parts) == 4 and parts[0] == 'files':
                     target = manager.result_path(parts[1], parts[2], parts[3])
-                elif path in ('/', '/app.js', '/style.css', '/triage.css'):
-                    target = Path(root) / 'local_panel/static' / ('index.html' if path == '/' else path[1:])
+                elif path in ('/', '/control', '/app.js', '/home.js', '/sky.js', '/style.css', '/triage.css',
+                              '/home.css', '/favicon.svg') or re.fullmatch(r'/fonts/[a-z0-9-]+\.woff2', path) \
+                        or re.fullmatch(r'/img/[a-z0-9-]+\.jpg', path):
+                    page = {'/': 'home.html', '/control': 'index.html'}.get(path, path[1:])
+                    target = Path(root) / 'local_panel/static' / page
                 else:
                     return self.send({'error': 'No encontrado'}, 404)
                 return self.send(target.read_bytes(), mime=mimetypes.guess_type(target.name)[0] or 'application/octet-stream')
@@ -103,10 +114,14 @@ def make_server(root=ROOT, port=8768, manager=None):
                 if path == '/api/cnn/stop':
                     manager.stop_cnn()
                     return self.send({'ok': True})
+                if path == '/api/settings':
+                    return self.send(manager.set_mode(data.get('mission')))
                 if path == '/api/discovery/start':
                     return self.send(manager.start_discovery(), 202)
                 if path == '/api/discovery/replenish':
                     return self.send(manager.replenish_discovery(), 201)
+                if path == '/api/watch':
+                    return self.send(manager.watch(data.get('kic'), data.get('action'), data.get('note')))
                 if path == '/api/cluster/settings':
                     if not manager.cluster:
                         raise ValueError('Modo red desactivado')
@@ -115,6 +130,12 @@ def make_server(root=ROOT, port=8768, manager=None):
                     if not manager.cluster:
                         raise ValueError('Modo red desactivado')
                     return self.send(manager.cluster.new_token())
+                if path == '/api/train/start':
+                    if not manager.cluster or not manager.cluster.server:
+                        raise ValueError('Abre el panel en modo red (ABRIR_PANEL_RED.bat) para entrenar repartido.')
+                    from local_panel import training
+                    with manager.lock:
+                        return self.send({'id': training.create_job(manager, data.get('per_class'))}, 201)
                 if path == '/api/discovery/stop':
                     manager.stop_discovery()
                     return self.send({'ok': True})

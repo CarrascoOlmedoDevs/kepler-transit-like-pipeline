@@ -27,7 +27,14 @@ class FakeProcess:
         return self.returncode
 
 
-class ClusterTests(unittest.TestCase):
+class ClusterBase(unittest.TestCase):
+    def zip_of(self, files):
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, 'w') as archive:
+            for name, content in files.items():
+                archive.writestr(name, content)
+        return buffer.getvalue()
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         base = Path(self.tmp.name)
@@ -56,6 +63,9 @@ class ClusterTests(unittest.TestCase):
     def helper(self, name='PC-salon', helper='aaaaaaaa11111111', **kw):
         return ayudante.run_worker(self.url, self.cluster.token, helper, name, self.helper_root,
                                    idle_exit=True, **kw)
+
+
+class ClusterTests(ClusterBase):
 
     def test_end_to_end_distributed_job(self):
         curve, _ = synthetic()
@@ -105,13 +115,6 @@ class ClusterTests(unittest.TestCase):
         with self.assertRaises(LookupError):
             self.cluster.fail('aaaaaaaa11111111', job, 123, 'tarde')
 
-    def zip_of(self, files):
-        buffer = io.BytesIO()
-        with zipfile.ZipFile(buffer, 'w') as archive:
-            for name, content in files.items():
-                archive.writestr(name, content)
-        return buffer.getvalue()
-
     def test_malicious_or_mismatched_results_are_rejected(self):
         job = self.manager.create('123', distributed=True)
         task = self.cluster.claim('aaaaaaaa11111111', 'A')
@@ -119,7 +122,6 @@ class ClusterTests(unittest.TestCase):
         cases = {
             'ruta': {'../../evil.py': 'x'},
             'extra': {'candidates.csv': 'kepid\n', 'metadata.json': good_meta, 'run.bat': 'x'},
-            'firma': {'candidates.csv': 'kepid\n', 'metadata.json': good_meta.replace(task['signature'], 'otra')},
             'estrella': {'candidates.csv': 'kepid\n999\n', 'metadata.json': good_meta},
             'imagen': {'candidates.csv': 'kepid\n', 'metadata.json': good_meta, 'lightcurve.png': 'no-png'},
         }
@@ -188,3 +190,96 @@ class ClusterTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class DistributedTrainingTests(ClusterBase):
+    def test_distributed_training_builds_dataset_and_model(self):
+        from local_panel import training
+        from test_pipeline import synthetic as make
+        rows = []
+        for n in range(8):
+            rows.append({'kepid': 1001 + n, 'kepoi_name': f'K0{1001 + n}.01', 'koi_period': 3.2,
+                         'koi_disposition': 'CANDIDATE', 'koi_pdisposition': 'CANDIDATE',
+                         'koi_time0bk': 120.7, 'koi_duration': 3.8})
+            rows.append({'kepid': 2001 + n, 'kepoi_name': f'K0{2001 + n}.01', 'koi_period': 3.2,
+                         'koi_disposition': 'FALSE POSITIVE', 'koi_pdisposition': 'FALSE POSITIVE',
+                         'koi_time0bk': 120.7, 'koi_duration': 3.8})
+        pd.DataFrame(rows).to_csv(self.root / 'data/koi_dr25.csv', index=False)
+        for n in range(8):
+            curve, _ = make(depth=0.003 + 0.0002 * n)
+            save_curve(curve, self.helper_root / f'cache/lightcurves/KIC_{1001 + n:08d}.npz')
+            curve, _ = make(depth=0.006, secondary=0.002 + 0.0001 * n)
+            save_curve(curve, self.helper_root / f'cache/lightcurves/KIC_{2001 + n:08d}.npz')
+        with self.manager.lock:
+            job = training.create_job(self.manager, 5)
+        state = read(self.root / f'results/local_panel/{job}/state.json')
+        self.assertEqual(len(state['ids']), 12)  # 5 por clase + 15 % de margen
+        self.assertIsNone(self.cluster.claim('cccccccc33333333', 'viejo'))  # sin 'build': nada
+        missing = state['ids'][0]
+        (self.helper_root / f'cache/lightcurves/KIC_{missing:08d}.npz').unlink()
+        real_download = __import__('kepler_detector.mast', fromlist=['download']).download
+
+        def offline(root, kic, *a, **k):
+            path = root / f'cache/lightcurves/KIC_{int(kic):08d}.npz'
+            if not path.exists():
+                raise ValueError('MAST no encontró curvas')
+            return real_download(root, kic, *a, **k)
+        with patch('kepler_detector.builder.download', side_effect=offline):
+            self.helper()
+        for _ in range(240):
+            state = read(self.root / f'results/local_panel/{job}/state.json')
+            if state['status'] in ('completed', 'error'):
+                break
+            time.sleep(0.5)
+        log = (self.root / f'results/local_panel/{job}/worker.log').read_text(encoding='utf-8')
+        self.assertEqual(state['status'], 'completed', log[-3000:])
+        self.assertEqual(state['stars'][str(missing)], 'failed')
+        data = pd.read_csv(self.root / 'data/training_features.csv')
+        self.assertEqual(sorted(data.label.value_counts().to_dict().items()), [(0, 5), (1, 5)])
+        self.assertTrue((self.root / 'models/kepler_rf.joblib').exists())
+        self.assertTrue((self.root / 'models/kepler_rf_metrics.json').exists())
+        manifest = json.loads((self.root / 'data/build_manifest.json').read_text())
+        self.assertEqual(manifest['row_count'], 10)
+        # El modelo nuevo se ofrece a los ayudantes y cambia la firma esperada.
+        self.assertIn('models/kepler_rf.joblib', self.cluster.info()['assets'])
+        self.assertFalse(self.cluster.no_model())
+
+    def test_result_with_old_models_goes_back_to_queue(self):
+        job = self.manager.create('123', distributed=True)
+        task = self.cluster.claim('aaaaaaaa11111111', 'A')
+        stale = json.dumps({'status': 'complete', 'kic': 123, 'signature': 'firma-antigua'})
+        with self.assertRaises(LookupError):
+            self.cluster.submit('aaaaaaaa11111111', job, 123,
+                                self.zip_of({'candidates.csv': 'kepid\n', 'metadata.json': stale}))
+        self.assertEqual(read(self.root / f'results/local_panel/{job}/state.json')['stars']['123'], 'pending')
+
+
+class TrainingResultTests(ClusterBase):
+    def build_job(self):
+        state = dict(id='abcdef0123456789', kind='cluster', task='build', mission='kepler', name='t', ids=[5],
+                     stars={'5': 'pending'}, status='running', current=None, pid=None, error=None,
+                     created=time.time(), build=dict(per_class=1, signals={'5': [['K1.01', 300.0, 0]]},
+                                                     next_star=1, rounds=5))
+        from local_panel.jobs import write as save
+        save(self.root / 'results/local_panel/abcdef0123456789/state.json', state)
+        return self.cluster.claim('aaaaaaaa11111111', 'A', caps=['build'])
+
+    def test_nan_features_are_accepted(self):
+        from kepler_detector.schema import RF_FEATURE_COLUMNS
+        self.build_job()
+        record = {'kepid': 5, 'kepoi_name': 'K1.01', 'label': 0,
+                  **{c: float('nan') for c in RF_FEATURE_COLUMNS}, 'period_days': 300.0}
+        with patch('local_panel.training.round_done', return_value=True):
+            self.cluster.submit_build('aaaaaaaa11111111', 'abcdef0123456789', 5,
+                                      [{'status': 'complete', 'record': record}])
+        saved = read(self.root / 'results/local_panel/abcdef0123456789/build_results/5.json')
+        self.assertIsNone(saved[0]['record']['odd_even_sigma'])
+        self.assertEqual(saved[0]['record']['period_days'], 300.0)
+
+    def test_invalid_result_counts_as_failure_not_loop(self):
+        self.build_job()
+        with self.assertRaises(LookupError):
+            self.cluster.submit_build('aaaaaaaa11111111', 'abcdef0123456789', 5, [{'status': 'raro'}])
+        state = read(self.root / 'results/local_panel/abcdef0123456789/state.json')
+        self.assertEqual(state['stars']['5'], 'pending')
+        self.assertEqual(state['attempts']['5'], 1)

@@ -13,6 +13,39 @@ from .utils import atomic_csv, atomic_json, read_frame, file_hash
 from .schema import RF_FEATURE_COLUMNS, schema_metadata, compatible, read_manifest, timestamp
 
 
+def selection(catalog, config):
+    """KOI etiquetados y orden fijo de estrellas (semilla de la configuración)."""
+    chosen = catalog[catalog.koi_pdisposition.isin(['CANDIDATE', 'FALSE POSITIVE'])].copy()
+    chosen['label'] = chosen.koi_pdisposition.map({'CANDIDATE': 1, 'FALSE POSITIVE': 0})
+    chosen = chosen[np.isfinite(chosen.koi_period) & (chosen.koi_period > max(config.durations))]
+    star_ids = chosen.kepid.unique()
+    np.random.default_rng(config.seed).shuffle(star_ids)
+    return chosen, star_ids
+
+
+def signal_record(curve, config, kic, kepoi_name, period, label):
+    """Variables de un KOI con BLS guiado por su periodo conocido (mismo esquema RF)."""
+    candidates, _ = search(curve, config, known_period=period)
+    features = extract(curve, candidates[0])
+    # Enforce the same ordered RF schema used by train/predict/evaluate.
+    features = {**{name: features[name] for name in RF_FEATURE_COLUMNS},
+                **{name: value for name, value in features.items() if name not in RF_FEATURE_COLUMNS}}
+    return {'kepid': int(kic), 'kepoi_name': kepoi_name, 'label': int(label), **features}
+
+
+def star_records(root, kic, signals, config):
+    """Para el reparto: descarga una estrella y mide todos sus KOI.
+    signals = [(kepoi_name, period, label), ...]. Un fallo de descarga se propaga."""
+    curve = preprocess(download(root, int(kic), config.quarter), config)
+    results = []
+    for name, period, label in signals:
+        try:
+            results.append({'status': 'complete', 'record': signal_record(curve, config, kic, name, period, label)})
+        except Exception as error:
+            results.append({'status': 'failed', 'kepoi_name': name, 'error': f'{type(error).__name__}: {error}'})
+    return results
+
+
 def build(root, config, per_class=500, force=False, retry_failed=False):
     if per_class < 1:
         raise ValueError('per-class debe ser positivo')
@@ -45,12 +78,8 @@ def build(root, config, per_class=500, force=False, retry_failed=False):
     rows = frame.to_dict('records')
     completed = {r['kepoi_name'] for r in rows}
     counts = {label: sum(r['label'] == label for r in rows) for label in (0, 1)}
-    chosen = catalog[catalog.koi_pdisposition.isin(['CANDIDATE', 'FALSE POSITIVE'])].copy()
-    chosen['label'] = chosen.koi_pdisposition.map({'CANDIDATE': 1, 'FALSE POSITIVE': 0})
-    chosen = chosen[np.isfinite(chosen.koi_period) & (chosen.koi_period > max(config.durations))]
     # Orden fijo por estrella: reutiliza curva/preprocesamiento para varios KOI.
-    star_ids = chosen.kepid.unique()
-    np.random.default_rng(config.seed).shuffle(star_ids)
+    chosen, star_ids = selection(catalog, config)
     for kic in star_ids:
         signals = [row for row in chosen[chosen.kepid == kic].itertuples()
                    if counts[row.label] < per_class and row.kepoi_name not in completed
@@ -73,12 +102,7 @@ def build(root, config, per_class=500, force=False, retry_failed=False):
             if counts[row.label] >= per_class:
                 continue
             try:
-                candidates, _ = search(curve, config, known_period=row.koi_period)
-                features = extract(curve, candidates[0])
-                # Enforce the same ordered RF schema used by train/predict/evaluate.
-                features = {**{name: features[name] for name in RF_FEATURE_COLUMNS},
-                            **{name: value for name, value in features.items() if name not in RF_FEATURE_COLUMNS}}
-                record = {'kepid': int(kic), 'kepoi_name': row.kepoi_name, 'label': int(row.label), **features}
+                record = signal_record(curve, config, kic, row.kepoi_name, row.koi_period, row.label)
                 rows.append(record)
                 completed.add(row.kepoi_name)
                 counts[row.label] += 1

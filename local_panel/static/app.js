@@ -1,9 +1,13 @@
 const $ = id => document.getElementById(id);
 let token = '', selected = null, busy = false, resultKey = '';
+// Enlaces desde el resumen: /control?job=…&kic=…
+const linkParams = new URLSearchParams(location.search);
+let wantedKic = linkParams.get('kic');
+selected = linkParams.get('job');
 const labels = {
   running: 'En ejecución', paused: 'Pausado', stopped: 'Detenido',
   completed: 'Finalizado', error: 'Error', ready: 'Preparado', pending: 'Pendiente',
-  complete: 'Completada', interrupted: 'Interrumpida', failed: 'Fallida'
+  complete: 'Completada', interrupted: 'Interrumpida', failed: 'Fallida', training: 'Entrenando'
 };
 
 async function api(path, data) {
@@ -20,13 +24,23 @@ async function api(path, data) {
 function msg(text) { $('message').textContent = text; }
 function node(tag, text) { const element = document.createElement(tag); element.textContent = text; return element; }
 
+let currentMission = 'kepler';
 async function results(state) {
+  currentMission = state.mission || 'kepler';
   const kic = $('stars').value;
   const key = `${state.id}/${kic}/${state.stars[kic]}`;
   if (key === resultKey) return;
   resultKey = key;
   $('results').replaceChildren();
   $('downloads').replaceChildren();
+  $('curves').replaceChildren();
+  $('curves-extra-imgs').replaceChildren();
+  $('curves-card').hidden = true;
+  if (state.task === 'build') {
+    const signals = (state.build?.signals || {})[kic] || [];
+    $('results').textContent = `Estrella de entrenamiento: ${signals.length} KOI (${signals.map(s => s[0]).join(', ')}). ${state.note || ''}`;
+    return;
+  }
   if (state.stars[kic] !== 'complete') {
     $('results').textContent = 'Esta estrella todavía no tiene resultados completos.';
     return;
@@ -56,17 +70,31 @@ async function results(state) {
       }
       const td = document.createElement('td');
       if (/^candidate_[0-9]+_folded\.png$/.test(row.plot_file || '')) {
+        const url = `/files/${state.id}/${kic}/${row.plot_file}`;
+        const thumb = document.createElement('a');
+        thumb.href = url;
+        thumb.target = '_blank';
+        thumb.rel = 'noopener';
+        thumb.className = 'curve-thumb';
+        thumb.title = 'Abrir a tamaño completo';
+        const img = document.createElement('img');
+        img.src = url;
+        img.loading = 'lazy';
+        img.alt = `Curva plegada del candidato ${row.rank || ''}`;
+        thumb.append(img);
         const link = node('a', 'Ver');
-        link.href = `/files/${state.id}/${kic}/${row.plot_file}`;
+        link.href = url;
         link.target = '_blank';
         link.rel = 'noopener';
-        td.append(link);
+        td.className = 'curve-cell';
+        td.append(thumb, link);
       }
       tr.append(td);
       table.append(tr);
     }
     $('results').append(table);
     if (!rows.length) $('results').append(node('p', 'Sin detecciones aceptadas.'));
+    renderCurves(state.id, kic, rows);
     for (const name of ['candidates.csv', 'detections.csv', 'metadata.json']) {
       const link = node('a', name);
       link.href = `/files/${state.id}/${kic}/${name}`;
@@ -79,13 +107,71 @@ async function results(state) {
   }
 }
 
+function figure(url, caption, className) {
+  const box = document.createElement('figure');
+  box.className = className || 'curve-figure';
+  const link = document.createElement('a');
+  link.href = url;
+  link.target = '_blank';
+  link.rel = 'noopener';
+  link.title = 'Abrir a tamaño completo';
+  const img = document.createElement('img');
+  img.src = url;
+  img.loading = 'lazy';
+  img.alt = caption;
+  img.onerror = () => box.remove();  // Resultados antiguos sin esa figura.
+  link.append(img);
+  box.append(link, node('figcaption', caption));
+  return box;
+}
+
+function renderCurves(job, kic, rows) {
+  const base = `/files/${job}/${kic}/`;
+  $('curves-title').textContent = starName(kic, currentMission);
+  const plotted = rows.filter(row => /^candidate_[0-9]+_folded\.png$/.test(row.plot_file || ''));
+  for (const row of plotted) {
+    const period = Number(row.period_days);
+    const caption = `Candidato ${row.rank || ''} · periodo ${Number.isFinite(period) ? period.toFixed(5) : '—'} d · ${row.triage_label || ''}`;
+    $('curves').append(figure(base + row.plot_file, caption));
+  }
+  if (!plotted.length) $('curves').append(node('p', 'Sin candidatos: abajo tienes la curva completa.'));
+  $('curves-extra').open = !plotted.length;
+  for (const [file, caption] of [['lightcurve.png', 'Curva completa (PDCSAP normalizada)'],
+      ['detrended_lightcurve.png', 'Curva sin tendencia'], ['bls_periodogram.png', 'Periodograma BLS']]) {
+    $('curves-extra-imgs').append(figure(base + file, caption, 'curve-figure small'));
+  }
+  $('curves-card').hidden = false;
+}
+
 let clusterEnabled = false;
+
+// ---- Selector Kepler | TESS (compartido por las dos páginas) ----
+let mission = 'kepler';
+const PREFIX = {kepler: 'KIC', tess: 'TIC'};
+const starName = (id, m) => `${PREFIX[m || mission] || 'KIC'} ${id}`;
+async function loadMode() {
+  const response = await fetch('/api/settings');
+  mission = (await response.json()).mission || 'kepler';
+  document.body.dataset.mission = mission;
+  for (const button of document.querySelectorAll('.mode-switch button')) {
+    button.classList.toggle('on', button.dataset.mission === mission);
+    button.onclick = async () => {
+      if (button.dataset.mission === mission) return;
+      if (!token) token = (await (await fetch('/api/state')).json()).token;
+      const result = await fetch('/api/settings', {method: 'POST', headers: {'Content-Type': 'application/json',
+        'X-Panel-Token': token}, body: JSON.stringify({mission: button.dataset.mission})});
+      if (result.ok) location.href = location.pathname;  // Recargar en el nuevo modo.
+    };
+  }
+}
 function renderCluster(cluster) {
   clusterEnabled = !!cluster.enabled;
   $('cluster-off').hidden = clusterEnabled;
   $('cluster-on').hidden = !clusterEnabled;
   $('distributed-label').hidden = !clusterEnabled;
-  $('mode-badge').textContent = clusterEnabled ? '● RED LOCAL ACTIVA' : '● SOLO EN ESTE ORDENADOR';
+  $('train-card').hidden = !clusterEnabled || mission !== 'kepler';
+  $('mode-badge').textContent = clusterEnabled ? 'Red local activa' : 'Solo este PC';
+  $('mode-badge').classList.toggle('live', clusterEnabled);
   if (!clusterEnabled) return;
   const addresses = (cluster.addresses.length ? cluster.addresses : ['IP-de-este-PC']).map(a => `${a}:${cluster.port}`);
   $('cluster-address').textContent = addresses.join('  ·  ');
@@ -98,13 +184,14 @@ function renderCluster(cluster) {
     row.className = 'helper';
     const name = node('span', `${helper.online ? '🟢' : '⚪'} ${helper.name}`);
     if (!helper.online) name.className = 'off';
-    const current = helper.current ? 'KIC ' + helper.current.split(':')[1] : (helper.online ? 'esperando' : 'desconectado');
+    const current = helper.current ? 'estrella ' + helper.current.split(':')[1] : (helper.online ? 'esperando' : 'desconectado');
     row.append(name, node('span', `${current} · ${helper.completed} hechas${helper.failed ? ` · ${helper.failed} fallos` : ''}`));
     $('cluster-helpers').append(row);
   }
 }
 
 function renderDiscovery(discovery, cnnRunning) {
+  $('discovery-eyebrow').textContent = mission === 'tess' ? 'Descubrimiento TESS: estrellas de 2 min sin TOI' : 'Descubrimiento Kepler';
   const active = discovery.enabled;
   const next = discovery.next_batch || 1;
   const total = discovery.total_batches || 25;
@@ -196,7 +283,7 @@ async function refresh() {
     $('serious').textContent = state.triage?.serious_count || 0;
     $('progress').max = state.ids.length;
     $('progress').value = done;
-    $('note').textContent = state.error || (state.kind === 'cluster' ? 'Reparto entre equipos de la red · cada estrella la analiza un ayudante y el coordinador valida el resultado.' : state.kind === 'blind' ? 'Cohorte TEST congelada. El control KIC 10854555 se ejecutará aparte, al terminar.' : 'Una estrella cada vez · Caché de curvas reutilizada · Configuración científica sin cambios.');
+    $('note').textContent = state.error || state.note || (state.kind === 'cluster' ? 'Reparto entre equipos de la red · cada estrella la analiza un ayudante y el coordinador valida el resultado.' : state.kind === 'blind' ? 'Cohorte TEST congelada. El control KIC 10854555 se ejecutará aparte, al terminar.' : 'Una estrella cada vez · Caché de curvas reutilizada · Configuración científica sin cambios.');
     $('resume').disabled = state.kind === 'cluster'
       ? (!clusterEnabled || ['running', 'completed'].includes(state.status))
       : (scanRunning || cnn.status === 'running' || state.status === 'completed');
@@ -210,9 +297,13 @@ async function refresh() {
     const seriousKics = new Set((state.triage?.serious || []).map(item => Number(item.kic)));
     for (const kic of ids) {
       const who = (state.assigned || {})[kic] || (state.done_by || {})[kic];
-      const option = node('option', `${seriousKics.has(Number(kic)) ? '✦ ' : ''}KIC ${kic} · ${labels[state.stars[kic]] || state.stars[kic]}${who ? ' · ' + who : ''}${kic === state.control ? ' (control)' : ''}`);
+      const option = node('option', `${seriousKics.has(Number(kic)) ? '✦ ' : ''}${starName(kic, state.mission || 'kepler')} · ${labels[state.stars[kic]] || state.stars[kic]}${who ? ' · ' + who : ''}${kic === state.control ? ' (control)' : ''}`);
       option.value = kic;
       $('stars').append(option);
+    }
+    if (wantedKic && ids.map(String).includes(String(wantedKic))) {
+      $('stars').value = String(wantedKic);
+      wantedKic = null;
     }
     if (ids.includes(Number(old))) $('stars').value = old;
     $('stars').onchange = () => results(state);
@@ -265,6 +356,16 @@ $('discovery-add').onclick = async () => {
 };
 
 $('distributed').onchange = () => refresh();
+$('train-start').onclick = async () => {
+  const perClass = Number($('train-per-class').value);
+  if (!confirm(`¿Entrenar con ${perClass} ejemplos por clase? Los equipos descargarán curvas de KOI conocidos; puede tardar horas.`)) return;
+  try {
+    const job = await api('/api/train/start', {per_class: perClass});
+    selected = job.id;
+    msg('Entrenamiento repartido iniciado: los equipos empezarán a medir KOI.');
+    await refresh();
+  } catch (error) { msg(error.message); }
+};
 $('cluster-discovery').onchange = async () => {
   try {
     await api('/api/cluster/settings', {distribute_discovery: $('cluster-discovery').checked});
@@ -322,5 +423,12 @@ if (document.modelContext?.registerTool) {
   } catch {}
 }
 
-refresh();
+loadMode().then(() => {
+  if (mission === 'tess') {
+    $('kics-label').textContent = 'Identificadores TIC (TESS)';
+    $('kics').placeholder = '25155310, 261136679';
+    $('kics-hint').textContent = 'Uno o varios TIC. Se analizan todos los sectores con curvas SPOC de 2 min (o FFI si no hay). El modelo RF es de Kepler: orientativo.';
+  }
+  refresh();
+});
 setInterval(refresh, 3000);

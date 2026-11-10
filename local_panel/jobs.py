@@ -92,6 +92,18 @@ def parse_kics(value):
     return ids
 
 
+DISCOVERY = {
+    'kepler': dict(auto='discovery_automation.json', batches='data/discovery_batches', column='kepid',
+                   targets='data/kepler_discovery_targets.csv', name='Descubrimiento'),
+    'tess': dict(auto='discovery_automation_tess.json', batches='data/tess_discovery_batches', column='tic',
+                 targets='data/tess_discovery_targets.csv', name='Descubrimiento TESS'),
+}
+
+
+def mission_of(state):
+    return state.get('mission') or 'kepler'
+
+
 class Manager:
     def __init__(self, root, launcher=None):
         self.root = Path(root).resolve()
@@ -103,6 +115,8 @@ class Manager:
         self.log_stream = None
         self.launcher = launcher or subprocess.Popen
         self.cluster = None  # local_panel.cluster.Cluster cuando el panel se abre con --lan
+        self.replenish_lock = threading.Lock()  # Ampliar la cola TESS consulta MAST: fuera del cerrojo principal
+        self.replenishing = set()
         self.import_blind()
         self.ensure_cnn_state()
         for path in self.folder.glob('*/state.json'):
@@ -114,7 +128,7 @@ class Manager:
                     if value == 'running':
                         state['stars'][kic] = 'pending'
                         changed = True
-                if state['status'] == 'running':
+                if state['status'] in ('running', 'training'):
                     state.update(status='paused', error='Panel reiniciado; reanuda el reparto explícitamente.')
                     changed = True
                 state.pop('assigned', None)
@@ -128,11 +142,33 @@ class Manager:
                 state.update(status='paused', current=None, error='Sesión interrumpida; continúa explícitamente.')
                 write(path, state)
 
-        automation = read(self.folder / 'discovery_automation.json')
-        if automation and automation.get('enabled'):
-            automation.update(enabled=False, status='paused',
-                              note='Panel reiniciado; reactiva la automatizacion explicitamente.')
-            write(self.folder / 'discovery_automation.json', automation)
+        for info in DISCOVERY.values():
+            automation = read(self.folder / info['auto'])
+            if automation and automation.get('enabled'):
+                automation.update(enabled=False, status='paused',
+                                  note='Panel reiniciado; reactiva la automatizacion explicitamente.')
+                write(self.folder / info['auto'], automation)
+
+    # ------------------------------------------------------------------ modo Kepler / TESS
+    def mode(self):
+        mode = (read(self.folder / 'settings.json', {}) or {}).get('mission', 'kepler')
+        return mode if mode in DISCOVERY else 'kepler'
+
+    def set_mode(self, mission):
+        if mission not in DISCOVERY:
+            raise ValueError('Modo desconocido: usa kepler o tess')
+        with self.lock:
+            settings = read(self.folder / 'settings.json', {}) or {}
+            settings['mission'] = mission
+            write(self.folder / 'settings.json', settings)
+            return {'mission': mission}
+
+    def star_folder(self, state, kic):
+        """Carpeta de resultados de una estrella según la misión del trabajo (KIC_/TIC_)."""
+        from kepler_detector import missions
+        base = (self.root / 'results/blind_evaluation/blind_workspace' if state.get('id') == 'blind'
+                else self.folder / state['id'] / 'workspace')
+        return base / 'results' / missions.get(mission_of(state)).folder(kic)
 
     def ensure_cnn_state(self):
         path = self.folder / 'cnn/state.json'
@@ -184,55 +220,76 @@ class Manager:
             if state.get('batch_index'):
                 from kepler_detector.catalog import update_discovery_batch_status
                 completed = sum(value == 'complete' for value in state.get('stars', {}).values())
-                update_discovery_batch_status(self.root, state['batch_index'], state['status'], completed)
+                update_discovery_batch_status(self.root, state['batch_index'], state['status'], completed,
+                                              DISCOVERY[mission_of(state)]['batches'])
             self.log_stream.close()
             self.process = self.active = self.log_stream = None
 
         self._advance_discovery()
 
-    def discovery_details(self):
-        state = read(self.folder / 'discovery_automation.json', {})
+    def discovery_details(self, mission=None):
+        mission = mission or self.mode()
+        info = DISCOVERY[mission]
+        state = read(self.folder / info['auto'], {})
         return {
+            'mission': mission,
             'enabled': bool(state.get('enabled')),
             'status': state.get('status', 'ready'),
             'next_batch': state.get('next_batch', 1),
             'total_batches': state.get('total_batches', 25),
             'waiting_job': state.get('waiting_job'),
             'note': state.get('note'),
-            'prepared_targets': self._csv_rows(self.root / 'data/kepler_discovery_targets.csv'),
+            'prepared_targets': self._csv_rows(self.root / info['targets']),
         }
 
-    def _batch_files(self):
-        files = sorted((self.root / 'data/discovery_batches').glob('batch_*.csv'))
+    def _batch_files(self, mission='kepler'):
+        # Orden numérico: batch_100 va después de batch_99.
+        files = sorted((self.root / DISCOVERY[mission]['batches']).glob('batch_*.csv'),
+                       key=lambda p: int(re.sub(r'[^0-9]', '', p.stem) or 0))
         if not files:
-            raise ValueError('No existen lotes de descubrimiento. Genera discovery-batches primero.')
+            raise ValueError('No existen lotes de descubrimiento. Pulsa "Preparar 250 más".')
         return files
 
     @staticmethod
-    def _batch_ids(path):
+    def _batch_ids(path, column='kepid'):
         with Path(path).open(encoding='utf-8', newline='') as stream:
             rows = list(csv.DictReader(stream))
-        ids = [int(row['kepid']) for row in rows]
+        ids = [int(row[column]) for row in rows]
         if not ids or len(ids) > 10 or len(ids) != len(set(ids)):
             raise ValueError(f'Lote invalido: {Path(path).name}')
         return ids
 
-    def start_discovery(self):
+    def start_discovery(self, mission=None):
+        mission = mission or self.mode()
+        info = DISCOVERY[mission]
+        if mission == 'tess' and not list((self.root / info['batches']).glob('batch_*.csv')):
+            with self.replenish_lock:  # Primera vez: catálogo TOI + primeros sectores (necesita red).
+                self._replenish(mission)
         with self.lock:
             self.refresh()
-            files = self._batch_files()
-            waiting = self.active if self.process and self.active != 'cnn' else None
+            files = self._batch_files(mission)
+            for other_mission, other in DISCOVERY.items():  # Una sola secuencia automática a la vez.
+                if other_mission != mission:
+                    previous = read(self.folder / other['auto'], {})
+                    if previous.get('enabled'):
+                        previous.update(enabled=False, status='paused',
+                                        note=f'Pausada al activar el descubrimiento {mission.upper()}.')
+                        write(self.folder / other['auto'], previous)
+            waiting = None
+            if self.process and self.active != 'cnn':
+                active = read(self.jobdir(self.active) / 'state.json', {})
+                waiting = self.active if active.get('batch_index') and mission_of(active) == mission else None
             if waiting is None:  # Un lote repartido en curso cuenta como análisis activo.
                 for path in self.folder.glob('*/state.json'):
                     other = read(path, {})
                     if other.get('kind') == 'cluster' and other.get('batch_index') and \
-                            other.get('status') in ('running', 'paused'):
+                            mission_of(other) == mission and other.get('status') in ('running', 'paused'):
                         waiting = other['id']
             next_batch = 1
             if waiting:
                 current = read(self.jobdir(waiting) / 'state.json')
                 for index, path in enumerate(files, 1):
-                    if current.get('ids') == self._batch_ids(path):
+                    if current.get('ids') == self._batch_ids(path, info['column']):
                         next_batch = index + 1
                         break
                 else:
@@ -241,11 +298,13 @@ class Manager:
                 handled = set()
                 for path in self.folder.glob('*/state.json'):
                     state = read(path, {})
+                    if mission_of(state) != mission or state.get('task') == 'build':
+                        continue
                     for kic, status in state.get('stars', {}).items():
                         if status in ('complete', 'failed'):
                             handled.add(int(kic))
                 for index, path in enumerate(files, 1):
-                    if not set(self._batch_ids(path)).issubset(handled):
+                    if not set(self._batch_ids(path, info['column'])).issubset(handled):
                         next_batch = index
                         break
                 else:
@@ -253,31 +312,64 @@ class Manager:
             automation = dict(enabled=True, status='scheduled' if waiting else 'running',
                               next_batch=next_batch, total_batches=len(files),
                               waiting_job=waiting, created=time.time(), note=None)
-            write(self.folder / 'discovery_automation.json', automation)
+            write(self.folder / info['auto'], automation)
             self._advance_discovery()
-            return self.discovery_details()
+            return self.discovery_details(mission)
 
-    def stop_discovery(self):
+    def stop_discovery(self, mission=None):
+        mission = mission or self.mode()
         with self.lock:
-            state = read(self.folder / 'discovery_automation.json')
+            state = read(self.folder / DISCOVERY[mission]['auto'])
             if not state or not state.get('enabled'):
                 raise ValueError('La automatizacion no esta activa.')
             state.update(enabled=False, status='paused',
                          note='Secuencia automatica desactivada; el lote actual no se interrumpe.')
-            write(self.folder / 'discovery_automation.json', state)
+            write(self.folder / DISCOVERY[mission]['auto'], state)
 
-    def replenish_discovery(self):
+    def _replenish(self, mission):
+        if mission == 'tess':
+            from kepler_detector import tess
+            return tess.replenish(self.root, block_size=250, batch_size=10)
+        from kepler_detector.catalog import replenish_discovery_batches
+        return replenish_discovery_batches(self.root, block_size=250, batch_size=10)
+
+    def replenish_discovery(self, mission=None):
+        mission = mission or self.mode()
+        with self.replenish_lock:
+            result = self._replenish(mission)
         with self.lock:
-            from kepler_detector.catalog import replenish_discovery_batches
-            result = replenish_discovery_batches(self.root, block_size=250, batch_size=10)
-            state = read(self.folder / 'discovery_automation.json', {})
+            state = read(self.folder / DISCOVERY[mission]['auto'], {})
             state.update(total_batches=result['total_batches'],
-                         note=f"Se añadieron 25 lotes; {result['total_targets']} estrellas preparadas.")
-            write(self.folder / 'discovery_automation.json', state)
-            return {**result, **self.discovery_details()}
+                         note=f"Se añadieron lotes; {result['total_targets']} estrellas preparadas.")
+            write(self.folder / DISCOVERY[mission]['auto'], state)
+            return {**result, **self.discovery_details(mission)}
+
+    def _background_replenish(self, mission):
+        try:
+            with self.replenish_lock:
+                result = self._replenish(mission)
+            note = f"Reserva ampliada automáticamente: {result['total_targets']} estrellas preparadas."
+        except Exception as error:  # red caida o archivo NASA no disponible: seguir con los lotes que ya hay
+            note = f'No se pudo ampliar la reserva: {error}'
+        with self.lock:
+            path = self.folder / DISCOVERY[mission]['auto']
+            automation = read(path, {}) or {}
+            automation['note'] = note
+            try:
+                automation['total_batches'] = len(self._batch_files(mission))
+            except ValueError:
+                pass
+            write(path, automation)
+            self.replenishing.discard(mission)
 
     def _advance_discovery(self):
-        automation = read(self.folder / 'discovery_automation.json')
+        for mission in DISCOVERY:
+            self._advance_one(mission)
+
+    def _advance_one(self, mission):
+        info = DISCOVERY[mission]
+        auto_path = self.folder / info['auto']
+        automation = read(auto_path)
         if not automation or not automation.get('enabled') or automation.get('status') == 'launching':
             return
         waiting = automation.get('waiting_job')
@@ -285,50 +377,44 @@ class Manager:
             state = read(self.folder / waiting / 'state.json', {})
             if state.get('status') not in ('completed', 'error'):
                 automation['status'] = 'running' if state.get('status') == 'running' else 'paused'
-                write(self.folder / 'discovery_automation.json', automation)
+                write(auto_path, automation)
                 return
             automation['waiting_job'] = None
-            write(self.folder / 'discovery_automation.json', automation)
-        if self.process:
+            write(auto_path, automation)
+        distributed = bool(self.cluster and self.cluster.server and
+                           self.cluster.settings.get('distribute_discovery'))
+        if self.process and not distributed:
             return
-        files = self._batch_files()
+        files = self._batch_files(mission)
         number = int(automation.get('next_batch', 1))
-        if len(files) - number + 1 <= 25:
-            from kepler_detector.catalog import replenish_discovery_batches
-            try:
-                replenish_discovery_batches(self.root, block_size=250, batch_size=10)
-                files = self._batch_files()
-                automation['total_batches'] = len(files)
-                automation['note'] = 'Reserva ampliada automaticamente con 25 lotes nuevos.'
-            except Exception as error:  # red caida o archivo NASA no disponible: seguir con los lotes que ya hay
-                automation['note'] = f'No se pudo ampliar la reserva: {error}'
-            write(self.folder / 'discovery_automation.json', automation)
+        if len(files) - number + 1 <= 25 and mission not in self.replenishing:
+            # En segundo plano: consultar la NASA no debe congelar el panel ni el reparto.
+            self.replenishing.add(mission)
+            threading.Thread(target=self._background_replenish, args=(mission,), daemon=True).start()
         if number > len(files):
             automation.update(enabled=False, status='completed', waiting_job=None,
                               note='Todos los lotes de descubrimiento han terminado.')
-            write(self.folder / 'discovery_automation.json', automation)
+            write(auto_path, automation)
             return
-        ids = self._batch_ids(files[number - 1])
+        ids = self._batch_ids(files[number - 1], info['column'])
         job = secrets.token_hex(8)
-        state = dict(id=job, kind='discovery',
-                     name=f'Descubrimiento - lote {number:02d}/{len(files):02d}',
+        state = dict(id=job, kind='discovery', mission=mission,
+                     name=f"{info['name']} - lote {number:02d}/{len(files):02d}",
                      ids=ids, stars={str(k): 'pending' for k in ids}, status='paused',
                      current=None, pid=None, error=None, created=time.time(),
                      batch_index=number, batch_total=len(files))
-        distributed = bool(self.cluster and self.cluster.server and
-                           self.cluster.settings.get('distribute_discovery'))
         if distributed:
-            state.update(kind='cluster', mission='kepler', status='running',
-                         name=f'Descubrimiento repartido - lote {number:02d}/{len(files):02d}')
+            state.update(kind='cluster', status='running',
+                         name=f"{info['name']} repartido - lote {number:02d}/{len(files):02d}")
         write(self.folder / job / 'state.json', state)
         automation.update(status='launching', waiting_job=job, next_batch=number + 1)
-        write(self.folder / 'discovery_automation.json', automation)
+        write(auto_path, automation)
         if not distributed:
             self._launch(job, state)
         from kepler_detector.catalog import update_discovery_batch_status
-        update_discovery_batch_status(self.root, number, 'running', 0)
+        update_discovery_batch_status(self.root, number, 'running', 0, info['batches'])
         automation['status'] = 'running'
-        write(self.folder / 'discovery_automation.json', automation)
+        write(auto_path, automation)
 
     def snapshot(self):
         with self.lock:
@@ -438,8 +524,11 @@ class Manager:
             write(self.folder / 'cnn/state.json', state)
             self.refresh()
 
-    def create(self, value, distributed=False):
+    def create(self, value, distributed=False, mission=None):
         ids = parse_kics(value)
+        mission = mission or self.mode()
+        if mission not in DISCOVERY:
+            raise ValueError('Misión desconocida')
         with self.lock:
             self.refresh()
             if distributed:
@@ -447,14 +536,16 @@ class Manager:
                     raise ValueError('Abre el panel en modo red (ABRIR_PANEL_RED.bat) para repartir.')
                 job = secrets.token_hex(8)
                 write(self.folder / job / 'state.json', dict(
-                    id=job, kind='cluster', name=f'Reparto de {len(ids)} estrella(s)', mission='kepler',
+                    id=job, kind='cluster', name=f'Reparto de {len(ids)} estrella(s)' + (' TESS' if mission == 'tess' else ''),
+                    mission=mission,
                     ids=ids, stars={str(k): 'pending' for k in ids}, status='running', current=None,
                     pid=None, error=None, created=time.time()))
                 return job
             if self.process:
                 raise ValueError('Ya hay un análisis activo; páusalo o detenlo primero.')
             job = secrets.token_hex(8)
-            write(self.folder / job / 'state.json', dict(id=job, kind='scan', name=f'Análisis de {len(ids)} estrella(s)',
+            write(self.folder / job / 'state.json', dict(id=job, kind='scan', mission=mission,
+                  name=f'Análisis de {len(ids)} estrella(s)' + (' TESS' if mission == 'tess' else ''),
                   ids=ids, stars={str(k): 'pending' for k in ids}, status='paused', current=None,
                   pid=None, error=None, created=time.time()))
             self.action(job, 'resume')
@@ -515,7 +606,8 @@ class Manager:
         if state.get('batch_index'):
             from kepler_detector.catalog import update_discovery_batch_status
             completed = sum(value == 'complete' for value in state.get('stars', {}).values())
-            update_discovery_batch_status(self.root, state['batch_index'], state['status'], completed)
+            update_discovery_batch_status(self.root, state['batch_index'], state['status'], completed,
+                                          DISCOVERY[mission_of(state)]['batches'])
         self._advance_discovery()
 
     def close(self):
@@ -543,14 +635,12 @@ class Manager:
 
     def _triage_summary(self, job, state):
         from kepler_detector.triage import assess_candidate
-        base = (self.root / 'results/blind_evaluation/blind_workspace' if job == 'blind'
-                else self.folder / job / 'workspace')
         serious = []
         review = []
         for kic, status in state.get('stars', {}).items():
             if status != 'complete':
                 continue
-            path = base / f'results/KIC_{int(kic)}' / 'candidates.csv'
+            path = self.star_folder(state, kic) / 'candidates.csv'
             if not path.exists():
                 continue
             with path.open(encoding='utf-8', newline='') as stream:
@@ -566,14 +656,123 @@ class Manager:
         return {'serious_count': len(serious), 'review_count': len(review),
                 'serious': serious, 'review': review}
 
+    # ------------------------------------------------------------------ resumen / seguimiento
+    OVERVIEW_FIELDS = ('rank', 'period_days', 'duration_hours', 'depth_ppm', 'depth_snr', 'number_of_transits',
+                       'rf_probability', 'cnn_probability', 'priority_score', 'known_koi', 'matched_koi_name',
+                       'known_disposition', 'known_tce', 'catalog_match_status', 'vetting_flags', 'plot_file',
+                       'known_toi', 'matched_toi_name', 'known_toi_disposition', 'model_calibrated')
+
+    @staticmethod
+    def _watch_key(kic, mission):
+        return str(int(kic)) if mission == 'kepler' else f'{mission}:{int(kic)}'
+
+    def overview(self, mission=None):
+        """Último resultado de cada estrella de una misión en todos los trabajos + seguimiento."""
+        from kepler_detector.triage import assess_candidate
+        mission = mission or self.mode()
+        if mission not in DISCOVERY:
+            raise ValueError('Misión desconocida')
+        states = [s for s in self.snapshot() if s.get('task') != 'build' and s.get('id') not in ('blind', 'cnn')
+                  and mission_of(s) == mission]
+        latest = {}
+        for state in states:  # Orden de creación: el análisis más reciente de cada estrella gana.
+            for kic, status in state.get('stars', {}).items():
+                if status == 'complete' and (self.star_folder(state, kic) / 'candidates.csv').exists():
+                    latest[int(kic)] = state
+        rows, labels, without_model, recent = [], {}, set(), []
+        rank_order = {'prioritario': 0, 'revisar': 1, 'débil': 2, 'debil': 2, 'descartable': 3}
+        for kic, state in latest.items():
+            path = self.star_folder(state, kic) / 'candidates.csv'
+            best = None
+            with path.open(encoding='utf-8', newline='') as stream:
+                for row in csv.DictReader(stream):
+                    assessment = assess_candidate(row)
+                    label = assessment['triage_label']
+                    labels[label] = labels.get(label, 0) + 1
+                    key = (rank_order.get(label, 4), -self._float(row.get('priority_score')))
+                    if best is None or key < best[0]:
+                        best = (key, row, label)
+                    if str(row.get('rf_available', '')).lower() != 'true':
+                        without_model.add(kic)
+                    if label not in ('prioritario', 'revisar'):
+                        continue
+                    item = {key: row.get(key, '') for key in self.OVERVIEW_FIELDS}
+                    item.update(kic=kic, job=state['id'], analyzed=state['created'],
+                                by=(state.get('done_by') or {}).get(str(kic), ''),
+                                label=label, reason=assessment['triage_reason'])
+                    rows.append(item)
+            # "Últimas analizadas": la mejor señal de cada estrella (o su curva completa si no hay).
+            entry = dict(kic=kic, job=state['id'], finished=path.stat().st_mtime,
+                         by=(state.get('done_by') or {}).get(str(kic), ''), label=None)
+            if best:
+                entry.update({key: best[1].get(key, '') for key in ('period_days', 'depth_ppm', 'depth_snr',
+                                                                     'plot_file', 'known_koi', 'known_toi')},
+                             label=best[2])
+            recent.append(entry)
+        recent = sorted(recent, key=lambda r: -r['finished'])[:12]
+        watch = read(self.folder / 'watchlist.json', {}) or {}
+        followed = []
+        for key, entry in watch.items():
+            entry_mission, _, number = key.rpartition(':')
+            if (entry_mission or 'kepler') != mission:
+                continue
+            state = latest.get(int(number))
+            followed.append(dict(entry, kic=int(number), job=state['id'] if state else None))
+        rank = {'prioritario': 0, 'revisar': 1}
+        rows.sort(key=lambda r: (rank[r['label']], -self._float(r['priority_score'])))
+        model = self.root / 'models/kepler_rf_metrics.json'
+        helpers = self.cluster.details()['helpers'] if self.cluster else []
+        team = [dict(name=h['name'], online=h['online'], completed=h['completed'],
+                     current=int(h['current'].split(':')[1]) if h.get('current') else None,
+                     current_mission=mission_of(read(self.folder / h['current'].split(':')[0] / 'state.json', {}))
+                     if h.get('current') else None)
+                for h in helpers]
+        return dict(stars=len(latest), candidates=sum(labels.values()), labels=labels, follow=rows,
+                    recent=recent, team=team,
+                    watchlist=sorted(followed, key=lambda f: -f.get('added', 0)),
+                    without_model=len(without_model), model=read(model, None) if model.exists() else None,
+                    helpers_online=sum(h['online'] for h in helpers), helpers=len(helpers),
+                    running=sum(s['status'] == 'running' for s in states), mission=mission,
+                    discovery=read(self.folder / DISCOVERY[mission]['auto'], {}) or {})
+
+    @staticmethod
+    def _float(value):
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return 0.0
+        return number if number == number else 0.0
+
+    def watch(self, kic, action, note='', mission=None):
+        kic = int(kic)
+        mission = mission or self.mode()
+        if kic <= 0 or mission not in DISCOVERY:
+            raise ValueError('Identificador inválido')
+        key = self._watch_key(kic, mission)
+        with self.lock:
+            path = self.folder / 'watchlist.json'
+            watch = read(path, {}) or {}
+            if action == 'add':
+                entry = watch.get(key, {'added': time.time()})
+                entry['note'] = str(note or '')[:500]
+                watch[key] = entry
+            elif action == 'remove':
+                watch.pop(key, None)
+            else:
+                raise ValueError('Acción desconocida')
+            write(path, watch)
+            return watch
+
     def result_path(self, job, kic, filename):
         state = read(self.jobdir(job) / 'state.json')
         if str(kic) not in state['stars'] or state['stars'][str(kic)] != 'complete':
             raise ValueError('Resultados aún no disponibles')
-        if filename not in {'candidates.csv', 'detections.csv', 'metadata.json'} and not re.fullmatch(r'candidate_[0-9]+_folded\.png', filename):
+        if filename not in {'candidates.csv', 'detections.csv', 'metadata.json', 'lightcurve.png',
+                            'detrended_lightcurve.png', 'bls_periodogram.png'} and \
+                not re.fullmatch(r'candidate_[0-9]+_folded\.png', filename):
             raise ValueError('Archivo no permitido')
         base = self.root / 'results/blind_evaluation/blind_workspace' if job == 'blind' else self.jobdir(job) / 'workspace'
-        path = base / f'results/KIC_{int(kic)}' / filename
+        path = self.star_folder(state, int(kic)) / filename
         if not path.resolve().is_relative_to(base.resolve()):
             raise ValueError('Ruta no permitida')
         return path

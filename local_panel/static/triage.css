@@ -1,14 +1,26 @@
-.stats{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
-.triage-badge{display:inline-block;padding:2px 8px;border:1px solid var(--edge);border-radius:20px;font-size:11px}
-.triage-prioritario{background:rgba(62,207,142,.12);box-shadow:inset 4px 0 #3ecf8e}
-.triage-prioritario .triage-badge{color:#8ff0bd;border-color:#3a8f68;font-weight:700}
-.triage-revisar{background:rgba(244,190,80,.08);box-shadow:inset 4px 0 #d8a43c}
-.triage-revisar .triage-badge{color:#ffd37a;border-color:#866b35}
-.triage-descartable{opacity:.72}
+/* Triage en la tabla de resultados: oro = serias, azul = para revisar */
+.triage-badge{display:inline-block;padding:2px 9px;border:1px solid var(--edge);border-radius:999px;font-size:11.5px}
+.triage-prioritario{background:rgba(255,200,107,.07);box-shadow:inset 3px 0 var(--star-g)}
+.triage-prioritario .triage-badge{color:var(--star-g);border-color:rgba(255,200,107,.5);font-weight:600}
+.triage-revisar{background:rgba(142,197,255,.05);box-shadow:inset 3px 0 var(--star-b)}
+.triage-revisar .triage-badge{color:var(--star-b);border-color:rgba(142,197,255,.45)}
+.triage-descartable{opacity:.7}
 .triage-descartable .triage-badge,.triage-débil .triage-badge,.triage-debil .triage-badge{color:var(--muted)}
 
-.check{display:flex;gap:.5em;align-items:center;margin:.5em 0;font-size:.9em}
-.check input{width:auto;margin:0}
-#cluster-card code{user-select:all;word-break:break-all}
-.helper{display:flex;justify-content:space-between;padding:.3em 0;border-top:1px solid rgba(127,127,127,.2)}
+.check{display:flex;gap:.55em;align-items:center;margin:.6em 0;font-size:13.5px}
+.check input{width:auto;margin:0;accent-color:var(--accent)}
+#cluster-card code{user-select:all;word-break:break-all;font:500 13px Consolas,"Cascadia Mono",monospace;color:var(--text);
+  background:rgba(4,7,22,.6);padding:2px 6px;border-radius:6px}
+.helper{display:flex;justify-content:space-between;gap:10px;padding:.45em 0;border-top:1px solid var(--edge-soft)}
 .helper .off{opacity:.5}
+
+/* Curvas */
+.curve-cell{min-width:260px}
+.curve-thumb{display:block;margin-bottom:4px}
+.curve-thumb img{display:block;width:260px;max-width:100%;height:auto;border-radius:10px;border:1px solid var(--edge-soft)}
+.curves{display:grid;gap:16px;margin-top:10px}
+.curve-figure{margin:0}
+.curve-figure img{display:block;width:100%;height:auto;border-radius:14px;border:1px solid var(--edge-soft)}
+.curve-figure figcaption{font-size:12.5px;color:var(--muted);margin-top:8px}
+#curves-extra{margin-top:16px}
+#curves-extra-imgs{grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}

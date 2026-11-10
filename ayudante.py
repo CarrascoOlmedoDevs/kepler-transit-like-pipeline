@@ -26,6 +26,13 @@ SETTINGS = HERE / 'ayudante.json'
 log = logging.getLogger('ayudante')
 
 
+def _plain(value):
+    """Números de numpy (int64, float32…) a tipos JSON."""
+    if hasattr(value, 'item'):
+        return value.item()
+    raise TypeError(f'No serializable: {type(value).__name__}')
+
+
 class Rejected(Exception):
     """El coordinador rechazó la operación (409/400): no tiene sentido reintentar."""
 
@@ -38,7 +45,7 @@ class Client:
         self.name = name
 
     def request(self, path, data=None, raw=None, headers=None, timeout=60):
-        body = raw if raw is not None else (json.dumps(data).encode() if data is not None else None)
+        body = raw if raw is not None else (json.dumps(data, default=_plain).encode() if data is not None else None)
         request = urllib.request.Request(self.server + path, data=body, method='POST' if body else 'GET')
         request.add_header('Authorization', f'Bearer {self.token}')
         request.add_header('Content-Type', 'application/zip' if raw is not None else 'application/json')
@@ -141,10 +148,14 @@ def process(client, root, task):
     beat = threading.Thread(target=heartbeat, daemon=True)
     beat.start()
     started = time.monotonic()
+    if task.get('task') == 'build':
+        return process_build(client, root, task, stop, started)
     try:
-        log.info('KIC %s: analizando…', kic)
-        scan(root, kic, Config(), no_model=task.get('no_model', False))
-        folder = root / 'results' / f'KIC_{kic}'
+        from kepler_detector import missions
+        info = missions.get(task.get('mission', 'kepler'))
+        log.info('%s: analizando…', info.label(kic))
+        scan(root, kic, Config(), no_model=task.get('no_model', False), mission=info.key)
+        folder = root / 'results' / info.folder(kic)
         meta = json.loads((folder / 'metadata.json').read_text(encoding='utf-8'))
         if meta.get('signature') != task['signature']:
             raise RuntimeError('La firma del análisis no coincide con la del coordinador '
@@ -179,6 +190,36 @@ def watch_parent(pid):
     os._exit(0)
 
 
+def process_build(client, root, task, stop, started):
+    """Entrenamiento repartido: medir los KOI de una estrella y devolver sus variables."""
+    from config import Config
+    from kepler_detector.builder import star_records
+    job, kic = task['job'], int(task['kic'])
+    try:
+        config = Config(**{**task['config'], 'durations': tuple(task['config']['durations'])})
+        if config.to_dict() != Config().to_dict():
+            raise RuntimeError('Configuración distinta a la de este equipo; actualiza Sakanet')
+        log.info('KIC %s: midiendo %d KOI para entrenar…', kic, len(task['signals']))
+        results = star_records(root, kic, [tuple(s) for s in task['signals']], config)
+    except Exception as error:
+        stop.set()
+        traceback.print_exc()
+        try:
+            retrying(lambda: client.post('/cluster/v1/fail', job=job, kic=kic,
+                                         error=f'{type(error).__name__}: {error}'), 'fallo')
+        except Rejected as rejected:
+            log.warning('KIC %s: %s', kic, rejected)
+        return 'failed'
+    stop.set()
+    try:
+        retrying(lambda: client.post('/cluster/v1/build_result', job=job, kic=kic, results=results), 'envío')
+    except Rejected as rejected:
+        log.warning('KIC %s: resultado no aceptado: %s', kic, rejected)
+        return 'rejected'
+    log.info('KIC %s: %d KOI enviados (%.0f s)', kic, len(results), time.monotonic() - started)
+    return 'complete'
+
+
 def run_worker(server, token, helper, name, root, idle_exit=False, max_tasks=None, parent=None):
     if parent:
         threading.Thread(target=watch_parent, args=(parent,), daemon=True).start()
@@ -191,7 +232,7 @@ def run_worker(server, token, helper, name, root, idle_exit=False, max_tasks=Non
     done, idle, current = 0, 0, None
     try:
         while max_tasks is None or done < max_tasks:
-            task = retrying(lambda: client.post('/cluster/v1/claim'), 'pedir trabajo', attempts=1000)
+            task = retrying(lambda: client.post('/cluster/v1/claim', caps=['build', 'missions']), 'pedir trabajo', attempts=1000)
             if not task.get('job'):
                 if idle_exit:
                     break
@@ -203,7 +244,8 @@ def run_worker(server, token, helper, name, root, idle_exit=False, max_tasks=Non
             if idle:
                 check_and_sync(client, root)  # Tras una espera, el coordinador pudo cambiar de modelo.
             idle, current = 0, task
-            process(client, root, task)
+            if process(client, root, task) == 'rejected':
+                check_and_sync(client, root)  # p. ej. el coordinador acaba de entrenar un modelo nuevo
             current = None
             done += 1
     except KeyboardInterrupt:

@@ -231,3 +231,42 @@ class LocalPanelTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+from kepler_detector.utils import setup  # noqa: E402
+from local_panel.jobs import write  # noqa: E402
+
+
+class OverviewTests(unittest.TestCase):
+    def test_overview_ranks_followable_signals_and_watchlist(self):
+        import csv as _csv
+        with tempfile.TemporaryDirectory() as tmp:
+            root = setup(Path(tmp))
+            manager = Manager(root, launcher=lambda *a, **k: None)
+            def job(job_id, created, rows):
+                folder = root / 'results/local_panel' / job_id
+                write(folder / 'state.json', dict(id=job_id, kind='cluster', ids=[7], stars={'7': 'complete'},
+                                                  status='completed', created=created, done_by={'7': 'PC-A'}))
+                out = folder / 'workspace/results/KIC_7'
+                out.mkdir(parents=True)
+                with (out / 'candidates.csv').open('w', newline='', encoding='utf-8') as stream:
+                    writer = _csv.DictWriter(stream, fieldnames=list(rows[0]))
+                    writer.writeheader()
+                    writer.writerows(rows)
+            base = dict(rank=1, period_days=3.2, depth_ppm=3000, depth_snr=40, number_of_transits=12,
+                        transit_depth_consistency=0.9, vetting_flags='', rf_available='True', known_koi='False',
+                        plot_file='candidate_01_folded.png')
+            job('aaaaaaaaaaaaaaa1', 1, [dict(base, rf_probability=0.2, cnn_probability=0.2, priority_score=10)])
+            # El análisis más reciente de la estrella sustituye al anterior.
+            job('aaaaaaaaaaaaaaa2', 2, [dict(base, rf_probability=0.9, cnn_probability=0.8, priority_score=60),
+                                        dict(base, rank=2, rf_probability=0.55, cnn_probability=0.1, priority_score=30)])
+            manager.watch(7, 'add', 'tránsito bonito')
+            data = manager.overview()
+            self.assertEqual(data['stars'], 1)
+            self.assertEqual([r['label'] for r in data['follow']], ['prioritario', 'revisar'])
+            self.assertEqual(data['follow'][0]['job'], 'aaaaaaaaaaaaaaa2')
+            self.assertEqual(data['follow'][0]['by'], 'PC-A')
+            self.assertEqual(data['watchlist'][0]['note'], 'tránsito bonito')
+            self.assertEqual(data['without_model'], 0)
+            manager.watch(7, 'remove')
+            self.assertEqual(manager.overview()['watchlist'], [])

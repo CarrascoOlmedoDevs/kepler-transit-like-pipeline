@@ -28,8 +28,10 @@ def assess_candidate(row):
     flags = set(str(row.get('vetting_flags') or '').split('|')) - {''}
     blockers = sorted(flags & SEVERE_FLAGS)
 
+    # Modelos entrenados con Kepler aplicados a K2/TESS: sus probabilidades no bastan para "prioritario".
+    calibrated = str(row.get('model_calibrated', 'True')).strip().lower() not in ('false', '0')
     serious = (
-        rf >= 0.65 and cnn >= 0.60 and priority >= 35
+        calibrated and rf >= 0.65 and cnn >= 0.60 and priority >= 35
         and snr >= 10 and transits >= 3 and consistency >= 0.50
         and not blockers
     )
@@ -42,7 +44,8 @@ def assess_candidate(row):
         reason = 'RF y CNN altos; señal repetida, consistente y sin alertas graves'
     elif review:
         label = 'revisar'
-        reason = 'señal moderada sin alertas graves; requiere inspección manual'
+        reason = ('señal sin alertas graves; modelo Kepler no calibrado para esta misión, revisar a mano'
+                  if not calibrated else 'señal moderada sin alertas graves; requiere inspección manual')
     elif blockers:
         label = 'descartable'
         reason = 'alertas: ' + ', '.join(blockers)

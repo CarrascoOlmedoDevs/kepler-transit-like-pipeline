@@ -128,7 +128,16 @@ def gaia_neighbours(ra, dec, radius=30.0):
                 FROM gaiadr3.gaia_source
                 WHERE CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', {ra}, {dec}, {radius / 3600})) = 1
                 ORDER BY sep"""
-    table = Gaia.launch_job(query).get_results()
+    table = None
+    for attempt in range(4):  # El servidor síncrono de Gaia se satura: trabajo asíncrono con reintentos.
+        try:
+            table = Gaia.launch_job_async(query).get_results()
+            break
+        except Exception:  # noqa: BLE001
+            if attempt == 3:
+                raise
+            import time
+            time.sleep(20 * (attempt + 1))
     return [dict(source_id=int(r['source_id']), ra=float(r['ra']), dec=float(r['dec']),
                  sep_arcsec=round(float(r['sep']), 2), g=round(float(r['phot_g_mean_mag']), 2),
                  ruwe=None if np.ma.is_masked(r['ruwe']) else round(float(r['ruwe']), 2)) for r in table]
@@ -136,7 +145,8 @@ def gaia_neighbours(ra, dec, radius=30.0):
 
 def main():
     import lightkurve as lk
-    args = sys.argv[1:]
+    args = [a for a in sys.argv[1:] if a != '--solo-gaia']
+    only_gaia = '--solo-gaia' in sys.argv
     kic = int(args[0]) if args else DEFAULT[0]
     period, epoch, hours = (float(a) for a in args[1:4]) if len(args) >= 4 else DEFAULT[1:]
     dur = hours / 24
@@ -147,7 +157,10 @@ def main():
     found = lk.search_targetpixelfile(f'KIC {kic}', mission='Kepler', cadence='long')
     print(f'  {len(found)} trimestres (unos 3 MB cada uno)', flush=True)
     events, header = [], None
-    for index in range(len(found)):
+    previous = out / 'informe.json'
+    if only_gaia:
+        header = found[0].download(download_dir=str(ROOT / 'cache/mast')).get_header()
+    for index in ([] if only_gaia else range(len(found))):
         tpf = found[index].download(quality_bitmask='default', download_dir=str(ROOT / 'cache/mast'))
         if tpf is None:
             continue
@@ -159,6 +172,8 @@ def main():
                   f"{ev['ddec_arcsec']:+.2f}±{ev['err_dec_arcsec']:.2f}\" Dec", flush=True)
         events.extend(quarter_events)
     report = dict(kic=kic, periodo_d=period, epoca_bkjd=epoch)
+    if only_gaia and previous.exists():
+        report = json.loads(previous.read_text(encoding='utf-8'))
     if events:
         ra = np.array([e['dra_arcsec'] for e in events])
         dec = np.array([e['ddec_arcsec'] for e in events])
@@ -208,7 +223,7 @@ def main():
     (out / 'informe.json').write_text(json.dumps(report, indent=2, ensure_ascii=False, default=float), encoding='utf-8')
 
     print('\n=== Imagen diferencia ===')
-    if events:
+    if 'imagen_diferencia' in report:
         r = report['imagen_diferencia']
         print(f"  desplazamiento medio {r['desplazamiento_arcsec']}\" "
               f"(RA {r['desplazamiento_ra_arcsec']:+}±{r['error_ra_arcsec']}, "

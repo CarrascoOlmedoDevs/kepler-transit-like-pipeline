@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sistema KIC 6881353</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Plan: un solo mundo visual (espacio profundo). Columna ancha de escenas en canvas
+   con sus mandos debajo; texto y tablas en columna de lectura. */
+:root{
+  color-scheme:dark;
+  --bg:#060912; --panel:#0d1322; --line:#1e2740;
+  --ink:#e9edf5; --muted:#8f9ab0;
+  --star:#FFF2E6; --orbit:#7fd0ff;
+  --med:#5fd6a5; --calc:#7fb2ff; --sup:#f0b45a; --hz:#58c98a;
+  --display:"Instrument Serif",Georgia,"Times New Roman",serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55}
+main{max-width:1120px;margin:0 auto;padding:28px 20px 72px;display:flex;flex-direction:column;gap:56px}
+h1,h2,h3{font-family:var(--display);font-weight:400;margin:0;text-wrap:balance;letter-spacing:.005em}
+h1{font-size:clamp(2.4rem,6vw,4.2rem);line-height:1}
+h2{font-size:clamp(1.7rem,3.4vw,2.3rem);line-height:1.1}
+h3{font-size:1.35rem}
+p{margin:0;max-width:65ch}
+.muted{color:var(--muted)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+header{display:flex;flex-direction:column;gap:14px}
+.kicker{font-family:var(--mono);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:1.08rem;color:#c9d1e0}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.facts div{background:var(--panel);padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.facts b{font-family:var(--mono);font-weight:500;font-size:1.15rem;font-variant-numeric:tabular-nums}
+.facts span{font-size:.8rem;color:var(--muted)}
+section{display:flex;flex-direction:column;gap:16px}
+.scene{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#04060d}
+canvas{display:block;width:100%}
+#orb{height:min(62vw,540px);min-height:330px;cursor:grab;touch-action:pan-y}
+#orb:active{cursor:grabbing}
+#tra{height:470px}
+.hud{display:flex;flex-wrap:wrap;gap:6px 22px;padding:10px 14px;border-top:1px solid var(--line);font-family:var(--mono);font-size:.82rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.hud b{color:var(--ink);font-weight:500}
+.ctl{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;padding:12px 14px;border-top:1px solid var(--line);background:var(--panel)}
+.ctl label{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted)}
+.ctl label.sl{flex:1 1 210px;min-width:190px}
+.ctl output{font-family:var(--mono);color:var(--ink);min-width:8ch;font-size:.8rem;font-variant-numeric:tabular-nums}
+input[type=range]{flex:1;accent-color:var(--orbit);min-width:80px}
+input[type=checkbox]{accent-color:var(--orbit);width:16px;height:16px}
+button{font:500 .85rem var(--body);color:var(--ink);background:#162038;border:1px solid #2a3759;border-radius:8px;padding:7px 12px;cursor:pointer}
+button:hover{background:#1c2a4a}
+button[aria-pressed=true]{background:var(--orbit);color:#04121c;border-color:var(--orbit)}
+:focus-visible{outline:2px solid var(--orbit);outline-offset:2px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px}
+.globes{display:flex;align-items:center;justify-content:center;gap:28px;flex-wrap:wrap;padding:8px 0}
+.globes figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:8px;font-size:.8rem;color:var(--muted)}
+#pla{width:240px;height:240px}
+.earth{width:126px;height:126px;border-radius:50%;background:radial-gradient(circle at 32% 34%,#8fc7ff 0,#3b82c9 38%,#17406e 68%,#050c16 100%)}
+ul.clean{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;color:#c9d1e0}
+.sky{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.sky figure{margin:0;display:flex;flex-direction:column;gap:8px;font-size:.82rem;color:var(--muted)}
+.sky .box{height:190px;border-radius:10px;display:grid;place-items:center}
+.sky .e{background:linear-gradient(#3f86d8,#a9d0f5)}
+.sky .k{background:linear-gradient(#d9d3bd,#fbf6e6)}
+.sky i{display:block;border-radius:50%}
+.sky .e i{width:32px;height:32px;background:#fffbe9;box-shadow:0 0 30px 12px #fff6c9aa}
+.sky .k i{width:96px;height:96px;background:#fff;box-shadow:0 0 60px 34px #ffffffcc}
+.discs{display:flex;align-items:flex-end;justify-content:center;gap:34px;padding:8px 0}
+.discs figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:8px;font-size:.8rem;color:var(--muted)}
+.discs i{display:block;border-radius:50%}
+.sun{width:70px;height:70px;background:radial-gradient(circle,#fff3c4 0,#ffd866 70%,#e9a93a 100%)}
+.kst{width:160px;height:160px;background:radial-gradient(circle,#fffaf4 0,#FFF2E6 60%,#e8c9a6 100%);box-shadow:0 0 50px #fff2e655}
+.axis{position:relative;height:116px;margin:6px 8px 0}
+.axis .track{position:absolute;left:0;right:0;top:64px;height:2px;background:var(--line)}
+.axis .hz{position:absolute;top:54px;height:22px;background:#58c98a33;border:1px solid #58c98a88;border-radius:4px;font-size:.72rem;color:var(--hz);display:grid;place-items:center}
+.axis .m{position:absolute;top:58px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:#6d7890}
+.axis .m.k{background:var(--orbit);width:14px;height:14px;margin-left:-7px;top:56px;box-shadow:0 0 0 4px #7fd0ff33}
+.axis .m span{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;font-size:.72rem;color:var(--muted);top:16px}
+.axis .m.up span{top:-22px}
+.axis .m.k span{color:var(--ink);top:-44px;font-weight:500}
+.axis .tick{position:absolute;top:94px;font:.7rem var(--mono);color:var(--muted);transform:translateX(-50%)}
+.bars{display:grid;grid-template-columns:auto 1fr auto;gap:8px 12px;align-items:center;font-size:.85rem}
+.bars .b{height:12px;border-radius:3px;background:#56627c}
+.bars .b.k{background:var(--orbit)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:420px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:500;color:var(--muted);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase}
+td:nth-child(2){font-family:var(--mono);font-size:.85rem;font-variant-numeric:tabular-nums}
+.pill{display:inline-block;font:500 .72rem var(--mono);padding:2px 8px;border-radius:99px;border:1px solid;white-space:nowrap}
+.pill.medido{color:var(--med);border-color:#5fd6a566;background:#5fd6a514}
+.pill.calculado{color:var(--calc);border-color:#7fb2ff66;background:#7fb2ff14}
+.pill.supuesto{color:var(--sup);border-color:#f0b45a66;background:#f0b45a14}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:.85rem;color:var(--muted);align-items:center}
+.note{border-left:3px solid var(--sup);padding:10px 14px;background:#f0b45a10;border-radius:0 8px 8px 0;font-size:.92rem;color:#d9dfeb}
+footer{font-size:.8rem;color:var(--muted);border-top:1px solid var(--line);padding-top:18px}
+@media (max-width:520px){.sky{grid-template-columns:1fr}#tra{height:420px}}
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <div class="kicker">Candidato a planeta · Cygnus/Lyra · 1990 años luz</div>
+  <h1>KIC 6881353 b</h1>
+  <p class="lede">Una posible supertierra o mini-Neptuno que da una vuelta cada 234 días a una estrella F7 subgigante, 2,3 veces más grande que el Sol. Esta página recrea el sistema con los valores medidos, calculados y supuestos.</p>
+  <div class="note">El planeta es un candidato: su existencia no está confirmada. Cada dato lleva su origen (medido, calculado o supuesto) en las tablas del final.</div>
+  <div class="facts">
+    <div><b>233,94 d</b><span>período orbital</span></div>
+    <div><b>0,78 UA</b><span>distancia a la estrella</span></div>
+    <div><b>1,9 R⊕</b><span>radio del planeta</span></div>
+    <div><b>60 ppm</b><span>caída de brillo en tránsito</span></div>
+    <div><b>470–510 K</b><span>temperatura de equilibrio</span></div>
+    <div><b>11 ×</b><span>luz recibida frente a la Tierra</span></div>
+  </div>
+</header>
+
+<section aria-labelledby="h-orb">
+  <h2 id="h-orb">El sistema en órbita</h2>
+  <p class="muted">Arrastra para girar la cámara. La línea discontinua apunta hacia la Tierra: desde allí la órbita se ve casi de canto (89,3°) y el planeta cruza el disco de la estrella.</p>
+  <div class="scene">
+    <canvas id="orb" aria-label="Vista orbital del sistema KIC 6881353"></canvas>
+    <div class="hud">
+      <span>Día <b id="hDay">0</b> de 233,94</span>
+      <span>Vueltas <b id="hRev">0</b></span>
+      <span>Próximo tránsito en <b id="hTr">0</b> d</span>
+      <span>Velocidad orbital <b>≈ 36 km/s</b></span>
+      <span>Tamaños <b id="hSc">ampliados</b></span>
+    </div>
+    <div class="ctl">
+      <button id="bPlay" type="button">Pausar</button>
+      <label class="sl" for="sSpeed">Tiempo <input id="sSpeed" type="range" min="0" max="100" value="79"><output id="oSpeed"></output></label>
+      <label class="sl" for="sZoom">Campo <input id="sZoom" type="range" min="0" max="100" value="76"><output id="oZoom"></output></label>
+      <label class="sl" for="sEl">Altura de cámara <input id="sEl" type="range" min="0.665" max="90" step="0.005" value="30"><output id="oEl"></output></label>
+    </div>
+    <div class="ctl">
+      <label for="cReal"><input id="cReal" type="checkbox"> Tamaños a escala real</label>
+      <label for="cHZ"><input id="cHZ" type="checkbox" checked> Zona habitable</label>
+      <label for="cSol"><input id="cSol" type="checkbox" checked> Órbitas del Sistema Solar</label>
+      <div class="btns">
+        <button id="pTop" type="button">Vista cenital</button>
+        <button id="pHZ" type="button">Hasta la zona habitable</button>
+        <button id="pEarth" type="button">Tránsito visto desde la Tierra</button>
+        <button id="pReset" type="button">Vista inicial</button>
+      </div>
+    </div>
+  </div>
+  <p class="muted">A escala real el planeta mide 0,8 % del diámetro de la estrella y la órbita equivale a 73 radios estelares, por eso la vista por defecto amplía los tamaños (estrella ×6, planeta ×150).</p>
+</section>
+
+<section aria-labelledby="h-tra">
+  <h2 id="h-tra">El tránsito</h2>
+  <p class="muted">Así se detecta: el planeta tarda 13,5 horas en cruzar la estrella cerca de su borde (parámetro de impacto 0,85) y tapa un 0,006 % de su luz. El punto del planeta está dibujado a escala.</p>
+  <div class="scene">
+    <canvas id="tra" aria-label="Animación del tránsito y curva de luz"></canvas>
+    <div class="hud">
+      <span>Tiempo <b id="tT">0</b> h desde el centro</span>
+      <span>Brillo <b id="tD">0</b> ppm</span>
+      <span>Rp/R★ <b>0,0076</b></span>
+    </div>
+    <div class="ctl">
+      <button id="tPlay" type="button">Pausar</button>
+      <label class="sl" for="tS">Hora <input id="tS" type="range" min="-10" max="10" step="0.02" value="-10"></label>
+    </div>
+  </div>
+  <p class="muted">La profundidad central es la medida (60 ppm). La forma redondeada de la curva es ilustrativa: resulta de un oscurecimiento al limbo lineal (u = 0,6) sobre una trayectoria tan cercana al borde.</p>
+</section>
+
+<section aria-labelledby="h-pla">
+  <h2 id="h-pla">Dos versiones del planeta</h2>
+  <p class="muted">Con 1,9 radios terrestres cae en el valle de radios, la frontera entre planetas rocosos y planetas con envoltura gaseosa. Las dos opciones son válidas con los datos actuales.</p>
+  <div class="two">
+    <div class="card">
+      <div class="btns" role="group" aria-label="Versión del planeta">
+        <button id="vRock" type="button" aria-pressed="true">Supertierra rocosa</button>
+        <button id="vNep" type="button" aria-pressed="false">Mini-Neptuno</button>
+      </div>
+      <div class="globes">
+        <figure><canvas id="pla" width="240" height="240" aria-label="Recreación del planeta"></canvas><figcaption>KIC 6881353 b · 12 100 km de radio</figcaption></figure>
+        <figure><div class="earth"></div><figcaption>Tierra, a la misma escala</figcaption></figure>
+      </div>
+      <h3 id="vT"></h3>
+      <ul class="clean" id="vL"></ul>
+      <p class="muted" style="font-size:.82rem">Recreación artística. Colores y texturas son una interpretación, no una observación.</p>
+    </div>
+    <div class="card">
+      <h3>El cielo desde allí</h3>
+      <div class="sky">
+        <figure><div class="box e"><i></i></div><figcaption>El Sol desde la Tierra: 0,53°</figcaption></figure>
+        <figure><div class="box k"><i></i></div><figcaption>KIC 6881353 desde el planeta: 1,6°, más blanca y unas 11 veces más brillante</figcaption></figure>
+      </div>
+      <p class="muted" style="font-size:.82rem">Diámetros a la misma escala angular. El color del cielo es ilustrativo.</p>
+      <h3>La estrella frente al Sol</h3>
+      <div class="discs">
+        <figure><i class="sun"></i><figcaption>Sol · 5772 K</figcaption></figure>
+        <figure><i class="kst"></i><figcaption>KIC 6881353 · 6181 K · 2,29 R☉ · ≈ 7 L☉</figcaption></figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="h-cmp">
+  <h2 id="h-cmp">Dónde queda respecto a la zona habitable</h2>
+  <div class="two">
+    <div class="card">
+      <h3>Distancia a la estrella (UA)</h3>
+      <div class="axis" id="axis"></div>
+      <p class="muted" style="font-size:.85rem">La estrella emite 7 veces la luz del Sol, así que su zona habitable empieza a 2,5 UA. El planeta, a 0,78 UA, queda muy por dentro. Mercurio, Venus, Tierra y Marte aparecen como referencia de distancia.</p>
+    </div>
+    <div class="card">
+      <h3>Luz recibida (Tierra = 1)</h3>
+      <div class="bars" id="bars"></div>
+      <p class="muted" style="font-size:.85rem">Recibe casi seis veces más energía que Venus. Sin efecto invernadero su temperatura de equilibrio sería de 200–240 °C.</p>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="h-dat">
+  <h2 id="h-dat">Todos los datos</h2>
+  <div class="legend">
+    <span><span class="pill medido">medido</span> observación directa</span>
+    <span><span class="pill calculado">calculado</span> derivado de lo medido</span>
+    <span><span class="pill supuesto">supuesto</span> hipótesis razonable</span>
+  </div>
+  <div id="tables" style="display:flex;flex-direction:column;gap:28px"></div>
+</section>
+
+<footer>Escalas usadas: 1 UA ≈ 215 radios solares; 1 radio solar ≈ 109 radios terrestres. Posición: AR 19h 46m 18s, Dec +42° 20′ 48″. Magnitud 11,7, no visible a simple vista.</footer>
+</main>
+
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s), PI=Math.PI, TAU=2*PI;
+const P=233.94, A=0.78, RS=2.29/215, RP=1.9/109/215, EL_T=0.665;
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const fmt=(v,d)=>v.toFixed(d).replace('.',',');
+function fit(c){const d=Math.min(window.devicePixelRatio||1,2),w=c.clientWidth,h=c.clientHeight;
+  if(c.width!==Math.round(w*d)||c.height!==Math.round(h*d)){c.width=Math.round(w*d);c.height=Math.round(h*d);}
+  const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);return [x,w,h];}
+let seed=7;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+const stars=Array.from({length:260},()=>[rnd(),rnd(),rnd()*1.1+.3,rnd()*.6+.15]);
+function drawStars(x,W,H){for(const s of stars){x.globalAlpha=s[3];x.fillStyle='#cfd8ee';x.fillRect(s[0]*W,s[1]*H,s[2],s[2]);}x.globalAlpha=1;}
+
+/* ---------- Escena orbital ---------- */
+const S={az:-0.6,el:30,half:1.3,t:20,speed:10,play:!reduced,real:false,hz:true,sol:true};
+const REF=[['Mercurio',0.387,87.97],['Venus',0.723,224.7],['Tierra',1,365.25],['Marte',1.524,686.98]];
+const orb=$('#orb');
+function drawOrb(){
+  const [x,W,H]=fit(orb);x.clearRect(0,0,W,H);drawStars(x,W,H);
+  const cx=W/2,cy=H/2,s=(W/2)/S.half,er=S.el*PI/180,se=Math.sin(er),ce=Math.cos(er),ca=Math.cos(S.az),sa=Math.sin(S.az);
+  const proj=(px,py)=>{const X=px*ca-py*sa,Y=px*sa+py*ca;return [cx+X*s,cy+Y*s*se,Y*ce];};
+  const ell=(r,a0,a1)=>{x.beginPath();x.ellipse(cx,cy,r*s,Math.max(r*s*se,.01),0,a0,a1);};
+  x.font='12px "IBM Plex Sans",sans-serif';x.textBaseline='middle';
+  if(S.hz){x.beginPath();x.ellipse(cx,cy,4.4*s,Math.max(4.4*s*se,.01),0,0,TAU);x.ellipse(cx,cy,2.5*s,Math.max(2.5*s*se,.01),0,0,TAU);
+    x.fillStyle='rgba(88,201,138,.13)';x.fill('evenodd');
+    x.strokeStyle='rgba(88,201,138,.45)';x.lineWidth=1;ell(2.5,0,TAU);x.stroke();ell(4.4,0,TAU);x.stroke();
+    const ly=cy-3.45*s*se;if(ly>10&&S.half>2.6){x.fillStyle='#58c98a';x.textAlign='center';x.fillText('Zona habitable · 2,5–4,4 UA',cx,ly);}}
+  const bodies=[];
+  if(S.sol)for(const r of REF){const th=TAU*S.t/r[2]+r[1]*5;const p=proj(r[1]*Math.cos(th),r[1]*Math.sin(th));bodies.push({p,ref:r});}
+  const th=TAU*S.t/P;const pp=proj(A*Math.cos(th),A*Math.sin(th));bodies.push({p:pp,k:true});
+  const half=(back)=>{const a0=back?PI:0,a1=back?TAU:PI;
+    if(S.sol){x.setLineDash([3,5]);x.strokeStyle='rgba(143,154,176,.38)';x.lineWidth=1;for(const r of REF){ell(r[1],a0,a1);x.stroke();}x.setLineDash([]);}
+    x.strokeStyle=back?'rgba(127,208,255,.55)':'rgba(127,208,255,.95)';x.lineWidth=1.6;ell(A,a0,a1);x.stroke();};
+  const rs=Math.max(2,(S.real?RS:RS*6)*s);
+  const rp=S.real?Math.max(1.3,RP*s):Math.max(4,RP*150*s);
+  const body=b=>{const [bx,by]=b.p;
+    if(b.k){const dx=cx-bx,dy=cy-by,dl=Math.hypot(dx,dy)||1;
+      const g=x.createRadialGradient(bx+dx/dl*rp*.5,by+dy/dl*rp*.5,0,bx,by,rp*1.15);g.addColorStop(0,'#f1e6c8');g.addColorStop(.6,'#9a8a6c');g.addColorStop(1,'#1c1a18');
+      x.fillStyle=b.p[2]>0&&dl<rs?'#0a0a0d':g;x.beginPath();x.arc(bx,by,rp,0,TAU);x.fill();
+      if(rp<3.2){x.strokeStyle='rgba(127,208,255,.9)';x.lineWidth=1;x.beginPath();x.arc(bx,by,8,0,TAU);x.stroke();}
+      x.fillStyle='#e9edf5';x.textAlign='left';x.fillText('KIC 6881353 b',bx+Math.max(rp,8)+6,by-10);}
+    else{x.fillStyle='#7a859c';x.beginPath();x.arc(bx,by,2.5,0,TAU);x.fill();x.fillStyle='rgba(143,154,176,.85)';x.textAlign='left';x.fillText(b.ref[0],bx+7,by);}};
+  half(true);bodies.filter(b=>b.p[2]<0).forEach(body);
+  const gl=x.createRadialGradient(cx,cy,rs*.6,cx,cy,rs*4+40);gl.addColorStop(0,'rgba(255,242,230,.5)');gl.addColorStop(.25,'rgba(255,236,214,.16)');gl.addColorStop(1,'rgba(255,236,214,0)');
+  x.fillStyle=gl;x.beginPath();x.arc(cx,cy,rs*4+40,0,TAU);x.fill();
+  const sg=x.createRadialGradient(cx,cy,0,cx,cy,rs);sg.addColorStop(0,'#fffaf4');sg.addColorStop(.6,'#FFF2E6');sg.addColorStop(.9,'#f3d4b0');sg.addColorStop(1,'#c9a078');
+  x.fillStyle=sg;x.beginPath();x.arc(cx,cy,rs,0,TAU);x.fill();
+  half(false);bodies.filter(b=>b.p[2]>=0).forEach(body);
+  // dirección a la Tierra
+  const L=S.half*.86,e0=proj(0,(S.real?RS:RS*6)*1.6),e1=proj(0,L);
+  if(Math.hypot(e1[0]-e0[0],e1[1]-e0[1])>40){x.setLineDash([6,6]);x.strokeStyle='rgba(240,180,90,.7)';x.lineWidth=1;x.beginPath();x.moveTo(e0[0],e0[1]);x.lineTo(e1[0],e1[1]);x.stroke();x.setLineDash([]);
+    x.fillStyle='#f0b45a';x.textAlign='center';x.fillText('hacia la Tierra',Math.min(Math.max(e1[0],60),W-60),Math.min(e1[1]+14,H-10));}
+  else{x.fillStyle='#f0b45a';x.textAlign='left';x.fillText('Vista desde la Tierra · inclinación 89,3°',14,18);}
+  x.fillStyle='rgba(233,237,245,.85)';x.textAlign='center';if(rs<W*.2)x.fillText('KIC 6881353',cx,cy+rs+16);
+  // barra de escala
+  const nice=[0.005,0.01,0.02,0.05,0.1,0.2,0.5,1,2];let bar=nice[0];for(const n of nice)if(n*s<=W*.22)bar=n;
+  x.strokeStyle='#8f9ab0';x.lineWidth=1.5;x.beginPath();x.moveTo(14,H-16);x.lineTo(14+bar*s,H-16);x.stroke();
+  x.fillStyle='#8f9ab0';x.textAlign='left';x.fillText(String(bar).replace('.',',')+' UA',14,H-28);
+  const d=((S.t%P)+P)%P;$('#hDay').textContent=fmt(d,1);$('#hRev').textContent=Math.floor(S.t/P);
+  $('#hTr').textContent=fmt((((P/4-S.t)%P)+P)%P,1);$('#hSc').textContent=S.real?'a escala real':'ampliados';
+}
+const sp2v=v=>0.05*Math.pow(800,v/100), v2sp=s=>100*Math.log(s/0.05)/Math.log(800);
+const z2v=v=>0.02*Math.pow(250,v/100), v2z=h=>100*Math.log(h/0.02)/Math.log(250);
+function sync(){
+  $('#sSpeed').value=v2sp(S.speed);$('#oSpeed').textContent=(S.speed<1?fmt(S.speed*24,1)+' h/s':fmt(S.speed,1)+' d/s');
+  $('#sZoom').value=v2z(S.half);$('#oZoom').textContent='±'+fmt(S.half,S.half<.2?3:2)+' UA';
+  $('#sEl').value=S.el;$('#oEl').textContent=fmt(S.el,1)+'°';
+  $('#cReal').checked=S.real;$('#cHZ').checked=S.hz;$('#cSol').checked=S.sol;
+  $('#bPlay').textContent=S.play?'Pausar':'Reproducir';
+}
+$('#sSpeed').oninput=e=>{S.speed=sp2v(+e.target.value);sync();};
+$('#sZoom').oninput=e=>{S.half=z2v(+e.target.value);sync();};
+$('#sEl').oninput=e=>{S.el=+e.target.value;sync();};
+$('#cReal').onchange=e=>{S.real=e.target.checked;};
+$('#cHZ').onchange=e=>{S.hz=e.target.checked;};
+$('#cSol').onchange=e=>{S.sol=e.target.checked;};
+$('#bPlay').onclick=()=>{S.play=!S.play;sync();};
+$('#pTop').onclick=()=>{S.el=90;sync();};
+$('#pHZ').onclick=()=>{S.half=5;S.el=Math.max(S.el,28);S.hz=true;sync();};
+$('#pEarth').onclick=()=>{Object.assign(S,{az:0,el:EL_T,half:0.03,real:true,t:Math.floor(S.t/P)*P+P/4-0.5,speed:0.15,play:true});sync();};
+$('#pReset').onclick=()=>{Object.assign(S,{az:-0.6,el:30,half:1.3,speed:10,real:false,hz:true,sol:true});sync();};
+let drag=null;
+orb.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,m:e.pointerType==='mouse'};orb.setPointerCapture(e.pointerId);});
+orb.addEventListener('pointermove',e=>{if(!drag)return;S.az+=(e.clientX-drag.x)*.008;
+  if(drag.m)S.el=Math.min(90,Math.max(EL_T,S.el+(e.clientY-drag.y)*.35));drag.x=e.clientX;drag.y=e.clientY;sync();});
+orb.addEventListener('pointerup',()=>drag=null);orb.addEventListener('pointercancel',()=>drag=null);
+
+/* ---------- Tránsito ---------- */
+const T={t:-10,play:!reduced},B=0.85,K=1.9/(2.29*109),V=2*Math.sqrt(1-B*B)/13.5,U=0.6;
+const LD=d=>1-U*(1-Math.sqrt(Math.max(0,1-d*d)));
+function depth(t){const d=Math.hypot(V*t,B);const f=Math.min(1,Math.max(0,(1+K-d)/(2*K)));return 60*f*LD(Math.min(d,1))/LD(B);}
+const tra=$('#tra');
+function drawTra(){
+  const [x,W,H]=fit(tra);x.clearRect(0,0,W,H);drawStars(x,W,H*.58);
+  const aH=H*.58,R=Math.min(W*.3,aH*.43),cx=W/2,cy=aH/2;
+  const gl=x.createRadialGradient(cx,cy,R*.9,cx,cy,R*1.6);gl.addColorStop(0,'rgba(255,242,230,.28)');gl.addColorStop(1,'rgba(255,242,230,0)');
+  x.fillStyle=gl;x.beginPath();x.arc(cx,cy,R*1.6,0,TAU);x.fill();
+  const g=x.createRadialGradient(cx,cy,0,cx,cy,R);
+  [[0,1],[.5,.92],[.8,.76],[.93,.62],[1,.42]].forEach(([r,i])=>g.addColorStop(r,`rgb(${Math.round(255*i)},${Math.round(242*i)},${Math.round(230*i)})`));
+  x.fillStyle=g;x.beginPath();x.arc(cx,cy,R,0,TAU);x.fill();
+  const py=cy+B*R,px=cx+V*T.t*R;
+  x.setLineDash([4,6]);x.strokeStyle='rgba(127,208,255,.5)';x.lineWidth=1;x.beginPath();x.moveTo(cx-V*10*R,py);x.lineTo(cx+V*10*R,py);x.stroke();x.setLineDash([]);
+  x.fillStyle='#05060a';x.beginPath();x.arc(px,py,Math.max(1.6,K*R),0,TAU);x.fill();
+  x.strokeStyle='rgba(127,208,255,.95)';x.beginPath();x.arc(px,py,9,0,TAU);x.stroke();
+  x.font='12px "IBM Plex Sans",sans-serif';x.textBaseline='middle';x.fillStyle='#e9edf5';x.textAlign='center';x.fillText('KIC 6881353 b',px,py+22);
+  // curva de luz
+  const L=54,Rr=W-18,Tp=aH+18,Bt=H-34,X=t=>L+(t+10)/20*(Rr-L),Y=p=>Tp+(10+p)/85*(Bt-Tp);
+  x.font='11px "IBM Plex Mono",monospace';
+  for(const p of [0,20,40,60]){x.strokeStyle='rgba(30,39,64,.9)';x.beginPath();x.moveTo(L,Y(p));x.lineTo(Rr,Y(p));x.stroke();x.fillStyle='#8f9ab0';x.textAlign='right';x.fillText(p?'−'+p:'0',L-8,Y(p));}
+  for(let t=-10;t<=10;t+=5){x.fillStyle='#8f9ab0';x.textAlign='center';x.fillText((t>0?'+':t<0?'−':'')+Math.abs(t)+' h',X(t),Bt+14);}
+  x.save();x.translate(14,(Tp+Bt)/2);x.rotate(-PI/2);x.textAlign='center';x.fillText('brillo (ppm)',0,0);x.restore();
+  const path=(t1,col,w)=>{x.beginPath();for(let i=0;i<=500;i++){const t=-10+20*i/500;if(t>t1)break;const xx=X(t),yy=Y(depth(t));i?x.lineTo(xx,yy):x.moveTo(xx,yy);}x.strokeStyle=col;x.lineWidth=w;x.stroke();};
+  path(10,'rgba(127,208,255,.25)',1.5);path(T.t,'#7fd0ff',2.2);
+  const dn=depth(T.t);x.fillStyle='#fff';x.beginPath();x.arc(X(T.t),Y(dn),4,0,TAU);x.fill();
+  $('#tT').textContent=(T.t<0?'−':'+')+fmt(Math.abs(T.t),1);$('#tD').textContent=dn>0.05?'−'+fmt(dn,1):'0,0';$('#tS').value=T.t;
+}
+$('#tS').oninput=e=>{T.t=+e.target.value;T.play=false;$('#tPlay').textContent='Reproducir';};
+$('#tPlay').onclick=()=>{T.play=!T.play;$('#tPlay').textContent=T.play?'Pausar':'Reproducir';};
+if(reduced){T.t=0;$('#tPlay').textContent='Reproducir';}
+
+/* ---------- Planeta procedural ---------- */
+const VER={
+  rock:{t:'Supertierra rocosa caliente',l:['Superficie de roca oscura','Quizá una atmósfera espesa tipo Venus con nubes amarillentas','Masa ≈ 4–7 M⊕, gravedad ≈ 1,4 g, velocidad de escape ≈ 18 km/s','Superficie a más de 200 °C incluso sin efecto invernadero']},
+  nep:{t:'Mini-Neptuno',l:['Sin superficie sólida accesible','Envoltura de hidrógeno y helio','Neblinas de tonos crema y azul pálido','La misma luz: 11 veces la que recibe la Tierra']}};
+let ver='rock',rot=0;
+function h3(i,j,k){let n=i*374761393+j*668265263+k*1274126177;n=(n^(n>>>13))*1274126177;return((n^(n>>>16))>>>0)/4294967295;}
+function vn(x,y,z){const i=Math.floor(x),j=Math.floor(y),k=Math.floor(z),u=x-i,v=y-j,w=z-k,a=u*u*(3-2*u),b=v*v*(3-2*v),c=w*w*(3-2*w);
+  const m=(p,q,t)=>p+(q-p)*t;
+  return m(m(m(h3(i,j,k),h3(i+1,j,k),a),m(h3(i,j+1,k),h3(i+1,j+1,k),a),b),m(m(h3(i,j,k+1),h3(i+1,j,k+1),a),m(h3(i,j+1,k+1),h3(i+1,j+1,k+1),a),b),c);}
+const fbm=(x,y,z)=>vn(x,y,z)*.55+vn(x*2.1,y*2.1,z*2.1)*.3+vn(x*4.3,y*4.3,z*4.3)*.15;
+const ss=(a,b,v)=>{const t=Math.min(1,Math.max(0,(v-a)/(b-a)));return t*t*(3-2*t);};
+const pc=$('#pla'),px2=pc.getContext('2d'),N=240,img=px2.createImageData(N,N);
+function drawPla(){
+  const d=img.data,cr=Math.cos(rot),sr=Math.sin(rot),Lx=-.62,Ly=-.3,Lz=.72,R=N/2-6;
+  for(let j=0;j<N;j++)for(let i=0;i<N;i++){
+    const o=(j*N+i)*4,x=(i-N/2)/R,y=(j-N/2)/R,rr=x*x+y*y;
+    if(rr>1.06){d[o+3]=0;continue;}
+    if(rr>1){const a=ver==='nep'?.5:.3,f=(1.06-rr)/.06*Math.max(0,(x*Lx+y*Ly)/Math.sqrt(rr)+.35);d[o]=ver==='nep'?190:230;d[o+1]=ver==='nep'?215:205;d[o+2]=ver==='nep'?240:150;d[o+3]=255*a*f;continue;}
+    const z=Math.sqrt(1-rr),X=x*cr+z*sr,Z=-x*sr+z*cr,Y=y;let r,g,b;
+    if(ver==='rock'){const n=fbm(X*2.4+5,Y*2.4,Z*2.4),c=ss(.5,.72,fbm(X*1.5+20,Y*2.6+3,Z*1.5+rot*.15))*.8;
+      r=38+n*70;g=32+n*52;b=30+n*40;r+=(214-r)*c;g+=(190-g)*c;b+=(118-b)*c;}
+    else{const w=fbm(X*1.4,Y*1.4+9,Z*1.4),t=.5+.5*Math.sin(Y*7+w*3.2),h=fbm(X*3+2,Y*9,Z*3);
+      r=168+(240-168)*t;g=198+(228-198)*t;b=232+(198-232)*t;r+=(h-.5)*22;g+=(h-.5)*18;b+=(h-.5)*14;}
+    let l=Math.max(0,x*Lx+y*Ly+z*Lz);l=.03+Math.pow(l,.85)*1.05;const rim=Math.pow(1-z,3)*(ver==='nep'?.45:.25)*Math.min(1,l*2);
+    d[o]=Math.min(255,r*l+255*rim);d[o+1]=Math.min(255,g*l+245*rim);d[o+2]=Math.min(255,b*l+(ver==='nep'?255:200)*rim);d[o+3]=255;}
+  px2.putImageData(img,0,0);
+}
+function setVer(v){ver=v;$('#vRock').setAttribute('aria-pressed',v==='rock');$('#vNep').setAttribute('aria-pressed',v==='nep');
+  $('#vT').textContent=VER[v].t;$('#vL').innerHTML=VER[v].l.map(s=>'<li>'+s+'</li>').join('');drawPla();}
+$('#vRock').onclick=()=>setVer('rock');$('#vNep').onclick=()=>setVer('nep');
+
+/* ---------- Comparativas y tablas ---------- */
+(function(){const ax=$('#axis'),pc=v=>(v/5*100)+'%';let h='<div class="track"></div><div class="hz" style="left:'+pc(2.5)+';width:'+pc(1.9)+'">zona habitable</div>';
+  [['Mercurio',.387,''],['Venus',.723,''],['KIC 6881353 b',.78,'k'],['Tierra',1,'up'],['Marte',1.524,'']].forEach((m,i)=>{
+    h+='<div class="m '+m[2]+(m[0]==='Mercurio'?' up':'')+'" style="left:'+pc(m[1])+'"><span>'+m[0]+'</span></div>';});
+  for(let i=0;i<=5;i++)h+='<div class="tick" style="left:'+pc(i)+'">'+i+'</div>';ax.innerHTML=h;
+  $('#bars').innerHTML=[['Tierra',1],['Venus',1.9],['Mercurio',6.7],['KIC 6881353 b',11]].map(b=>
+    '<span>'+b[0]+'</span><div><div class="b'+(b[1]===11?' k':'')+'" style="width:'+(b[1]/11*100)+'%"></div></div><span class="num">'+String(b[1]).replace('.',',')+' ×</span>').join('');
+  const D=[['La estrella · KIC 6881353',[
+    ['Tipo','F7 subgigante (empieza a salir de la secuencia principal)','calculado'],
+    ['Temperatura','6181 K','medido','KIC'],
+    ['Color aproximado','blanco algo cálido, #FFF2E6','calculado'],
+    ['Radio','2,29 R☉ (≈ 1,6 millones de km)','medido','Gaia–Kepler'],
+    ['Masa','≈ 1,15 M☉ (entre 1,0 y 1,3)','supuesto'],
+    ['Luminosidad','≈ 7 L☉','calculado'],
+    ['Distancia','609 pc ≈ 1990 años luz','medido','Gaia'],
+    ['Posición en el cielo','AR 19h 46m 18s, Dec +42° 20′ 48″ (Cygnus/Lyra)','medido'],
+    ['Brillo desde la Tierra','magnitud 11,7 (no visible a simple vista)','medido']]],
+   ['La órbita',[
+    ['Período','233,94 días','medido'],
+    ['Distancia a la estrella','≈ 0,78 UA ≈ 117 millones de km (≈ 73 radios estelares)','calculado'],
+    ['Excentricidad','0, órbita circular','supuesto'],
+    ['Inclinación','89,3° (casi de canto desde la Tierra)','calculado'],
+    ['Parámetro de impacto','0,85 (cruza cerca del borde)','medido'],
+    ['Velocidad orbital','≈ 36 km/s (la Tierra va a 30)','calculado'],
+    ['Duración del tránsito','13,5 h','medido'],
+    ['Caída de brillo','60 ppm (0,006 %)','medido']]],
+   ['El planeta · KIC 6881353 b',[
+    ['Radio','1,9 ± 0,1 R⊕ (≈ 12 100 km)','medido'],
+    ['Masa','≈ 4–7 M⊕','supuesto'],
+    ['Luz que recibe','≈ 11 veces la de la Tierra (Venus recibe 1,9)','calculado'],
+    ['Temperatura de equilibrio','≈ 470–510 K (200–240 °C), sin efecto invernadero','calculado'],
+    ['Zona habitable de la estrella','≈ 2,5–4,4 UA (el planeta está muy por dentro)','calculado'],
+    ['Gravedad, si es rocoso','≈ 1,4 g','supuesto'],
+    ['Velocidad de escape','≈ 18 km/s','supuesto'],
+    ['Tamaño aparente de la estrella','≈ 1,6° (tres veces el Sol visto desde la Tierra)','calculado']]]];
+  $('#tables').innerHTML=D.map(t=>'<div><h3 style="margin-bottom:8px">'+t[0]+'</h3><div class="tablewrap"><table><thead><tr><th>Dato</th><th>Valor</th><th>Origen</th></tr></thead><tbody>'+
+    t[1].map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td><span class="pill '+r[2]+'">'+r[2]+'</span>'+(r[3]?' <span class="muted" style="font-size:.78rem">'+r[3]+'</span>':'')+'</td></tr>').join('')+'</tbody></table></div></div>').join('');
+})();
+
+/* ---------- Bucle ---------- */
+sync();setVer('rock');
+let last=performance.now(),pAcc=0;
+function frame(now){const dt=Math.min(.1,(now-last)/1000);last=now;
+  if(S.play)S.t+=S.speed*dt;drawOrb();
+  if(T.play){T.t+=2.2*dt;if(T.t>10)T.t=-10;}drawTra();
+  if(!reduced){pAcc+=dt;if(pAcc>.07){rot+=pAcc*.12;pAcc=0;drawPla();}}
+  requestAnimationFrame(frame);}
+requestAnimationFrame(frame);
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{drawOrb();drawTra();});
+})();
+</script>
+</body>
+</html>

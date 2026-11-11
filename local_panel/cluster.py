@@ -170,15 +170,29 @@ class Cluster:
             stream.write(time.strftime('%H:%M:%S ') + text + '\n')
 
     def _touch(self, helper, name=None, address=None, **changes):
-        entry = self.helpers.setdefault(helper, dict(id=helper, name=name or helper[:8], completed=0,
+        entry = self.helpers.setdefault(helper, dict(id=helper, name=helper[:8], host='', completed=0,
                                                      failed=0, current=None, address=address))
         if name:
-            entry['name'] = str(name)[:40]
+            entry['host'] = str(name)[:40]   # Nombre del equipo: se conserva como dato secundario
         if address:
             entry['address'] = address
+        entry['name'] = self._display_name(entry)
         entry['last_seen'] = time.time()
         entry.update(changes)
         return entry
+
+    @staticmethod
+    def _display_name(entry):
+        """Lo que se ve en el panel y en los registros: la IP del ayudante, no su nombre de equipo."""
+        host, address = entry.get('host') or '', entry.get('address')
+        if not address:
+            return host or entry['id'][:8]
+        worker = re.search(r' #[0-9]+$', host.replace(' (este PC)', ''))  # Varios procesos en un mismo PC
+        suffix = worker.group(0) if worker else ''
+        if address.startswith('127.') or address == '::1':
+            local = lan_addresses()
+            return f"{local[0] if local else address}{suffix} (este PC)"
+        return address + suffix
 
     def _jobs(self):
         states = []

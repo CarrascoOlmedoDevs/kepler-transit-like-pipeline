@@ -722,7 +722,7 @@ class Manager:
         rows.sort(key=lambda r: (rank[r['label']], -self._float(r['priority_score'])))
         model = self.root / 'models/kepler_rf_metrics.json'
         helpers = self.cluster.details()['helpers'] if self.cluster else []
-        team = [dict(name=h['name'], online=h['online'], completed=h['completed'],
+        team = [dict(name=h['name'], host=h.get('host', ''), online=h['online'], completed=h['completed'],
                      current=int(h['current'].split(':')[1]) if h.get('current') else None,
                      current_mission=mission_of(read(self.folder / h['current'].split(':')[0] / 'state.json', {}))
                      if h.get('current') else None)

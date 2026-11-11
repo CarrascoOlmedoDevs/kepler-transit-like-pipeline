@@ -179,6 +179,7 @@ function renderTeam(team) {
     const item = node('div', null, 'member' + (helper.online ? ' online' : ''));
     const name = node('strong', helper.name.replace(' (este PC)', ''));
     if (helper.name.includes('(este PC)')) name.append(node('em', 'este PC'));
+    if (helper.host) item.title = helper.host.replace(' (este PC)', '');
     const doing = helper.current
       ? `analiza ${starName(helper.current, helper.current_mission)}`
       : (helper.online ? 'esperando trabajo' : 'desconectado');

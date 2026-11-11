@@ -15,7 +15,7 @@ import pandas as pd
 import ayudante
 from kepler_detector.mast import save_curve
 from kepler_detector.utils import setup, close_logging
-from local_panel.cluster import Cluster
+from local_panel.cluster import Cluster, lan_addresses
 from local_panel.jobs import Manager, read, write
 from test_pipeline import synthetic
 
@@ -86,7 +86,8 @@ class ClusterTests(ClusterBase):
         state = read(self.root / f'results/local_panel/{job}/state.json')
         self.assertEqual(state['stars'], {'123': 'complete', '124': 'failed'})
         self.assertEqual(state['status'], 'completed')
-        self.assertEqual(state['done_by']['123'], 'PC-salon')
+        self.assertEqual(state['done_by']['123'], f'{lan_addresses()[0] if lan_addresses() else "127.0.0.1"} (este PC)')
+        self.assertEqual(self.cluster.details()['helpers'][0]['host'], 'PC-salon')
         result = self.root / f'results/local_panel/{job}/workspace/results/KIC_123'
         frame = pd.read_csv(result / 'candidates.csv')
         self.assertTrue(frame.known_koi.any())
@@ -328,3 +329,14 @@ class SelfUpdateTests(ClusterBase):
                 self.helper()
         # La estrella que le tocó vuelve a la cola, no se pierde.
         self.assertEqual(read(self.root / f'results/local_panel/{job}/state.json')['stars']['123'], 'pending')
+
+
+class HelperNameTests(ClusterBase):
+    def test_panel_shows_helper_ip_instead_of_hostname(self):
+        self.manager.create('1 2 3', distributed=True)
+        self.cluster.claim('aaaaaaaa11111111', 'DESKTOP-AILPCVR', '192.168.1.44')
+        self.cluster.claim('bbbbbbbb22222222', 'DESKTOP-8CI7A80 #2', '192.168.1.51')
+        names = {h['host']: h['name'] for h in self.cluster.details()['helpers']}
+        self.assertEqual(names, {'DESKTOP-AILPCVR': '192.168.1.44', 'DESKTOP-8CI7A80 #2': '192.168.1.51 #2'})
+        log = (self.root / 'results/local_panel').glob('*/worker.log')
+        self.assertIn('192.168.1.44: INICIO KIC', next(log).read_text(encoding='utf-8'))

@@ -1,84 +1,75 @@
-KEPLER TRANSIT-LIKE SIGNAL PIPELINE
-PROPRIETARY SOFTWARE LICENSE
-Copyright (c) 2026 Javier Carrasco. All rights reserved.
+Required Notice: Copyright 2026 Javier Carrasco (https://github.com/CarrascoOlmedoDevs)
 
-1. Ownership
+# PolyForm Noncommercial License 1.0.0
 
-The source code, documentation, model definitions, workflows, project-specific
-datasets, generated project artifacts, and other original material in the current
-distribution of the Kepler Transit-Like Signal Pipeline (the "Software") are
-proprietary to Javier Carrasco, except for third-party components identified by
-their own licenses.
+<https://polyformproject.org/licenses/noncommercial/1.0.0>
 
-2. No license granted by default
+## Acceptance
 
-Except where a separate written agreement expressly grants permission, no license
-or other right is granted to copy, reproduce, modify, publish, distribute,
-sublicense, sell, lease, host as a service, commercially exploit, or create
-derivative works from the proprietary portions of the Software.
+In order to get any license under these terms, you must agree to them as both strict obligations and conditions to all your licenses.
 
-Access to the source code does not itself grant permission to use or redistribute
-the proprietary portions of the Software.
+## Copyright License
 
-3. Authorized use
+The licensor grants you a copyright license for the software to do everything you might do with the software that would otherwise infringe the licensor's copyright in it for any permitted purpose.  However, you may only distribute the software according to [Distribution License](#distribution-license) and make changes or new works based on the software according to [Changes and New Works License](#changes-and-new-works-license).
 
-Use of the proprietary Software is permitted only when expressly authorized in
-writing by the copyright owner and only within the scope of that authorization.
-Any commercial, research-partnership, redistribution, hosted-service, OEM, or
-institutional use requires separate written permission unless another agreement
-states otherwise.
+## Distribution License
 
-4. Third-party software and data
+The licensor grants you an additional copyright license to distribute copies of the software.  Your license to distribute covers distributing the software with changes and new works permitted by [Changes and New Works License](#changes-and-new-works-license).
 
-The Software may depend on or interoperate with third-party software, scientific
-libraries, public astronomical archives, catalogs, or data products. Those
-components and data remain subject to their respective licenses, terms, and
-attribution requirements. This license does not restrict rights granted directly
-by those third parties.
+## Notices
 
-5. Prior Apache-2.0 releases
+You must ensure that anyone who gets a copy of any part of the software from you also gets a copy of these terms or the URL for them above, as well as copies of any plain-text lines beginning with `Required Notice:` that the licensor provided with the software.  For example:
 
-Earlier versions of this project were publicly distributed under the Apache
-License 2.0. Rights already granted under Apache-2.0 for those historical versions
-are not revoked by this license change.
+> Required Notice: Copyright Yoyodyne, Inc. (http://example.com)
 
-The licensing boundary and historical commit information are documented in
-LICENSE_HISTORY.md. This proprietary license governs the current and subsequent
-proprietary distributions unless a later version states otherwise.
+## Changes and New Works License
 
-6. Scientific results and trademarks
+The licensor grants you an additional copyright license to make changes and new works based on the software for any permitted purpose.
 
-This license does not grant ownership over public-domain astronomical observations,
-third-party catalogs, or facts of nature. Project names, branding, private model
-artifacts, private annotations, private derived datasets, and original proprietary
-software remain reserved to the extent permitted by law.
+## Patent License
 
-7. Reverse engineering
+The licensor grants you a patent license for the software that covers patent claims the licensor can license, or becomes able to license, that you would infringe by using the software.
 
-To the extent permitted by applicable law, reverse engineering, decompilation,
-circumvention of technical restrictions, or extraction of proprietary model or
-software internals is prohibited unless expressly authorized in writing.
+## Noncommercial Purposes
 
-Nothing in this section limits rights that cannot lawfully be excluded.
+Any noncommercial purpose is a permitted purpose.
 
-8. No warranty
+## Personal Uses
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR
-A PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT, SCIENTIFIC VALIDITY, OR FITNESS
-FOR ANY SPECIFIC RESEARCH OR COMMERCIAL PURPOSE.
+Personal use for research, experiment, and testing for the benefit of public knowledge, personal study, private entertainment, hobby projects, amateur pursuits, or religious observance, without any anticipated commercial application, is use for a permitted purpose.
 
-9. Limitation of liability
+## Noncommercial Organizations
 
-TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE COPYRIGHT OWNER SHALL NOT BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, CONSEQUENTIAL, OR
-OTHER DAMAGES ARISING FROM THE USE OF OR INABILITY TO USE THE SOFTWARE, DATA,
-MODELS, OR RESULTS.
+Use by any charitable organization, educational institution, public research organization, public safety or health organization, environmental protection organization, or government institution is use for a permitted purpose regardless of the source of funding or obligations resulting from the funding.
 
-10. Written permissions
+## Fair Use
 
-Additional rights, evaluation permissions, research collaborations, commercial
-licenses, or acquisition terms may be granted separately in writing by the
-copyright owner.
+You may have "fair use" rights for the software under the law. These terms do not limit them.
 
-All rights not expressly granted are reserved.
+## No Other Rights
+
+These terms do not allow you to sublicense or transfer any of your licenses to anyone else, or prevent the licensor from granting licenses to anyone else.  These terms do not imply any other licenses.
+
+## Patent Defense
+
+If you make any written claim that the software infringes or contributes to infringement of any patent, your patent license for the software granted under these terms ends immediately. If your company makes such a claim, your patent license ends immediately for work on behalf of your company.
+
+## Violations
+
+The first time you are notified in writing that you have violated any of these terms, or done anything with the software not covered by your licenses, your licenses can nonetheless continue if you come into full compliance with these terms, and take practical steps to correct past violations, within 32 days of receiving notice.  Otherwise, all your licenses end immediately.
+
+## No Liability
+
+***As far as the law allows, the software comes as is, without any warranty or condition, and the licensor will not be liable to you for any damages arising out of these terms or the use or nature of the software, under any kind of legal claim.***
+
+## Definitions
+
+The **licensor** is the individual or entity offering these terms, and the **software** is the software the licensor makes available under these terms.
+
+**You** refers to the individual or entity agreeing to these terms.
+
+**Your company** is any legal entity, sole proprietorship, or other kind of organization that you work for, plus all organizations that have control over, are under the control of, or are under common control with that organization.  **Control** means ownership of substantially all the assets of an entity, or the power to direct its management and policies by vote, contract, or otherwise.  Control can be direct or indirect.
+
+**Your licenses** are all the licenses granted to you for the software under these terms.
+
+**Use** means anything you do with the software requiring one of your licenses.

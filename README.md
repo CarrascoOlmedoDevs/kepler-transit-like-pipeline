@@ -6,7 +6,7 @@
 
 [![Pipeline](https://img.shields.io/badge/pipeline-2.0-45b8ac)](#benchmark-ciego-pipeline-20)
 [![Python](https://img.shields.io/badge/Python-3.11-3776ab)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-Proprietary-red)](LICENSE)
+[![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue)](LICENSE)
 
 Proyecto ejecutable en **Python 3.11 / Windows 10–11**. Descarga curvas reales de
 Kepler desde MAST usando Lightkurve, busca caídas periódicas con BLS, vuelve a medir
@@ -20,9 +20,11 @@ Random Forest, vetting físico, ranking y una evaluación end-to-end ciega.
 
 ## Licencia y estado del desarrollo
 
-El desarrollo actual del proyecto es **propietario**. El uso, copia, modificación,
-redistribución o explotación de las versiones propietarias requiere autorización
-escrita del titular. Consulte [`LICENSE`](LICENSE).
+Desde el 11 de noviembre de 2026 el proyecto se distribuye bajo la
+**[PolyForm Noncommercial License 1.0.0](LICENSE)**: cualquiera puede usarlo, estudiarlo,
+modificarlo y redistribuirlo con fines no comerciales (investigación, docencia, uso
+personal o aficionado, organizaciones sin ánimo de lucro e instituciones públicas).
+El uso comercial requiere autorización escrita del titular. Consulte [`LICENSE`](LICENSE).
 
 **Pipeline 2.0 tuvo una publicación histórica bajo Apache License 2.0.** Ese cambio
 de licencia no revoca los derechos que ya hubieran sido concedidos sobre copias de
@@ -31,7 +33,7 @@ correspondientes están documentados en
 [`LICENSE_HISTORY.md`](LICENSE_HISTORY.md).
 
 Las librerías de terceros y los datos astronómicos públicos conservan sus propias
-licencias y condiciones. La licencia propietaria del proyecto no reclama propiedad
+licencias y condiciones. La licencia del proyecto no reclama propiedad
 sobre observaciones públicas, catálogos de terceros ni hechos científicos.
 
 ## Benchmark ciego Pipeline 2.0

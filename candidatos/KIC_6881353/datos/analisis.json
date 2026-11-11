@@ -110,11 +110,13 @@
       }
     ],
     "col_mpix": 0.019,
-    "col_error_mpix": 0.011,
+    "col_error_mpix": 0.065,
+    "col_inflado": 6.07,
     "row_mpix": -0.054,
-    "row_error_mpix": 0.011,
+    "row_error_mpix": 0.066,
+    "row_inflado": 6.01,
     "desplazamiento_mpix": 0.057,
-    "significancia_sigma": 3.68,
+    "significancia_sigma": 0.62,
     "desplazamiento_mas": 0.23
   },
   "forma": {
@@ -126,17 +128,17 @@
     "error_ingreso_h": 0.6,
     "desfase_centro_h": -0.19,
     "chi2_reducido": 1.174,
-    "radio_planeta_rtierra": 1.24,
-    "densidad_estelar_solar": 0.312,
-    "a_sobre_rs": 108.3,
-    "t14_central_esperada_h": 16.62,
-    "parametro_impacto_b": 0.59,
+    "radio_planeta_rtierra": 1.94,
+    "densidad_estelar_solar": 0.096,
+    "a_sobre_rs": 73.0,
+    "t14_central_esperada_h": 24.67,
+    "parametro_impacto_b": 0.84,
     "forma_compatible": true
   },
   "resumen": [
     "1 tránsito(s) casi sin señal: BKJD 817.816 (SNR 1.7, cobertura 0.97, hueco 1.0 h)",
     "profundidades poco compatibles entre tránsitos",
-    "CENTROIDE DESPLAZADO 3.68 σ: posible binaria de fondo",
-    "duración compatible con la estrella (b ≈ 0.59)"
+    "centroide sin desplazamiento significativo (0.62 σ)",
+    "duración compatible con la estrella (b ≈ 0.84)"
   ]
 }

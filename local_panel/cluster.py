@@ -228,7 +228,7 @@ class Cluster:
         state['current'] = int(running[0]) if len(running) == 1 else (len(running) or None)
 
     # ------------------------------------------------------------------ protocolo
-    def claim(self, helper, name, address=None, caps=()):
+    def claim(self, helper, name, address=None, caps=(), _retry=True):
         with self.lock:
             self._expire()
             self._touch(helper, name, address)
@@ -264,14 +264,11 @@ class Cluster:
             self.helpers[helper]['current'] = None
             # Nada que repartir: si el lote de descubrimiento sólo tiene estrellas en curso,
             # esto lanza el siguiente y el ayudante lo recibe en esta misma petición.
-            if any(s.get('batch_index') and s['status'] == 'running' for s in self._jobs()) \
-                    and not getattr(self, '_advancing', False):
-                self._advancing = True
-                try:
-                    self.manager._advance_discovery()
-                finally:
-                    self._advancing = False
-                return self.claim(helper, name, address, caps)
+            # Un solo reintento: si el lote nuevo tampoco tiene nada para este ayudante, se le dice
+            # que espere (antes se reintentaba sin fin y la petición moría por recursión).
+            if _retry and any(s.get('batch_index') and s['status'] == 'running' for s in self._jobs()):
+                self.manager._advance_discovery()
+                return self.claim(helper, name, address, caps, _retry=False)
             return None
 
     def heartbeat(self, helper, job, kic):

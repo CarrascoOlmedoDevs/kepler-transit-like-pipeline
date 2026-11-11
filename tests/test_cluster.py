@@ -400,3 +400,17 @@ class BatchOverlapTests(ClusterBase):
         self.cluster.release(f'{1:016x}', first, tasks[0]['kic'])
         again = self.cluster.claim('eeeeeeeeeeeeeeee', 'otro', '10.0.0.98')
         self.assertEqual((again['job'], again['kic']), (first, tasks[0]['kic']))
+
+
+class ClaimRetryTests(ClusterBase):
+    def test_claim_with_nothing_to_give_returns_none_without_recursion(self):
+        from local_panel.jobs import write as save
+        # Lote de descubrimiento en marcha sin estrellas pendientes y sin lote siguiente que lanzar.
+        state = dict(id='0123456789abcdef', kind='cluster', mission='kepler', name='lote', ids=[7],
+                     stars={'7': 'running'}, status='running', current=None, pid=None, error=None,
+                     created=time.time(), batch_index=1)
+        save(self.root / 'results/local_panel/0123456789abcdef/state.json', state)
+        calls = []
+        with patch.object(self.manager, '_advance_discovery', side_effect=lambda: calls.append(1)):
+            self.assertIsNone(self.cluster.claim('aaaaaaaa11111111', 'A', caps=['build', 'missions']))
+        self.assertEqual(len(calls), 1)

@@ -375,7 +375,12 @@ class Manager:
         waiting = automation.get('waiting_job')
         if waiting:
             state = read(self.folder / waiting / 'state.json', {})
-            if state.get('status') not in ('completed', 'error'):
+            # Lote repartido sin estrellas pendientes (sólo quedan algunas en curso): se lanza ya el
+            # siguiente para que los equipos libres no esperen. Como mucho un lote por delante, porque
+            # el nuevo sí tiene pendientes. El anterior termina por su cuenta.
+            overlap = (state.get('kind') == 'cluster' and state.get('status') == 'running'
+                       and 'pending' not in state.get('stars', {}).values())
+            if state.get('status') not in ('completed', 'error') and not overlap:
                 automation['status'] = 'running' if state.get('status') == 'running' else 'paused'
                 write(auto_path, automation)
                 return

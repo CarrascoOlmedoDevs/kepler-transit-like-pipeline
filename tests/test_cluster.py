@@ -340,3 +340,28 @@ class HelperNameTests(ClusterBase):
         self.assertEqual(names, {'DESKTOP-AILPCVR': '192.168.1.44', 'DESKTOP-8CI7A80 #2': '192.168.1.51 #2'})
         log = (self.root / 'results/local_panel').glob('*/worker.log')
         self.assertIn('192.168.1.44: INICIO KIC', next(log).read_text(encoding='utf-8'))
+
+
+class BatchOverlapTests(ClusterBase):
+    def test_idle_helpers_take_stars_from_next_batch(self):
+        batches = self.root / 'data/discovery_batches'
+        batches.mkdir(parents=True)
+        for number in range(1, 31):
+            (batches / f'batch_{number:02d}.csv').write_text(
+                'queue_rank,kepid\n' + ''.join(f'{r},{1000 + r}\n' for r in range(number * 10 - 9, number * 10 + 1)),
+                encoding='utf-8')
+        self.cluster.set_distribute_discovery(True)
+        self.manager.start_discovery('kepler')
+        tasks = [self.cluster.claim(f'{n:016x}', f'PC{n}', f'10.0.0.{n}') for n in range(1, 11)]
+        first = tasks[0]['job']
+        self.assertTrue(all(t['job'] == first for t in tasks))      # Lote 1 repartido entero
+        extra = self.cluster.claim('ffffffffffffffff', 'libre', '10.0.0.99')
+        self.assertIsNotNone(extra)                                   # El libre no se queda parado
+        self.assertNotEqual(extra['job'], first)
+        self.assertEqual(extra['kic'], 1011)                          # Primera estrella del lote 2
+        batches_open = [s for s in self.manager.snapshot() if s.get('batch_index')]
+        self.assertEqual(sorted(s['batch_index'] for s in batches_open), [1, 2])  # Sólo uno por delante
+        # Si una estrella del lote 1 vuelve a la cola, se reparte antes que las del lote 2.
+        self.cluster.release(f'{1:016x}', first, tasks[0]['kic'])
+        again = self.cluster.claim('eeeeeeeeeeeeeeee', 'otro', '10.0.0.98')
+        self.assertEqual((again['job'], again['kic']), (first, tasks[0]['kic']))

@@ -259,6 +259,16 @@ class Cluster:
                                 no_model=self.no_model(), signature=self.expected_signature(mission),
                                 lease_seconds=self.lease_seconds)
             self.helpers[helper]['current'] = None
+            # Nada que repartir: si el lote de descubrimiento sólo tiene estrellas en curso,
+            # esto lanza el siguiente y el ayudante lo recibe en esta misma petición.
+            if any(s.get('batch_index') and s['status'] == 'running' for s in self._jobs()) \
+                    and not getattr(self, '_advancing', False):
+                self._advancing = True
+                try:
+                    self.manager._advance_discovery()
+                finally:
+                    self._advancing = False
+                return self.claim(helper, name, address, caps)
             return None
 
     def heartbeat(self, helper, job, kic):

@@ -21,7 +21,7 @@ from kepler_detector.utils import setup, atomic_json, file_hash
 class SchemaTests(unittest.TestCase):
     def test_schema_hash_and_single_source(self):
         self.assertEqual(FEATURE_VERSION, '2.0')
-        self.assertEqual(PIPELINE_VERSION, '2.0')
+        self.assertEqual(PIPELINE_VERSION, '2.1')
         self.assertIs(MODEL_FEATURES, RF_FEATURE_COLUMNS)
         self.assertEqual(FEATURE_SCHEMA_HASH, hashlib.sha256(
             ('2.0|' + '|'.join(RF_FEATURE_COLUMNS)).encode()).hexdigest())

@@ -102,13 +102,24 @@ class ScienceTests(unittest.TestCase):
         self.assertEqual(len(deduplicate([c, same, harmonic, other], curve.time)), 3)
 
     def test_adaptive_duration_expands_upper_boundary(self):
-        curve, _ = synthetic(period=5.0, duration=0.7, depth=0.004, days=80)
-        cfg = Config(period_max=10, coarse_points=1000, refine_peaks=3,
+        # Planeta de período largo con tránsito de ~14 h: la malla inicial (<= 0.45 d) se amplía
+        # y, al ser físicamente plausible, ya no se marca como borde (2.0 sí lo marcaba).
+        curve, _ = synthetic(period=40.0, duration=0.6, depth=0.004, days=400)
+        cfg = Config(period_max=60, coarse_points=1000, refine_peaks=3,
                      durations=(0.05, 0.1, 0.2, 0.3, 0.45))
-        candidates, _ = search(curve, cfg, known_period=5.0)
+        candidates, _ = search(curve, cfg, known_period=40.0)
         self.assertGreater(candidates[0].duration, 0.45)
+        self.assertFalse(candidates[0].duration_at_boundary)
+        self.assertAlmostEqual(candidates[0].duration, 0.6, delta=0.1)
+
+    def test_unphysical_duration_is_capped_and_flagged(self):
+        # Caja de ~17 h con período de 5 d: imposible para un planeta (máximo ~7.8 h con factor 2.5).
+        from kepler_detector.bls import max_duration
+        curve, _ = synthetic(period=5.0, duration=0.7, depth=0.004, days=80)
+        cfg = Config(period_max=10, coarse_points=1000, refine_peaks=3)
+        candidates, _ = search(curve, cfg, known_period=5.0)
+        self.assertLessEqual(candidates[0].duration, max_duration(5.0, cfg) * 1.001)
         self.assertTrue(candidates[0].duration_at_boundary)
-        self.assertAlmostEqual(candidates[0].duration, 0.7, delta=0.12)
 
     def test_transit_consistency_and_jackknife(self):
         curve, candidate = synthetic(days=45)

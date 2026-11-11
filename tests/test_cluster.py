@@ -15,7 +15,7 @@ import pandas as pd
 import ayudante
 from kepler_detector.mast import save_curve
 from kepler_detector.utils import setup, close_logging
-from local_panel.cluster import Cluster
+from local_panel.cluster import Cluster, lan_addresses
 from local_panel.jobs import Manager, read, write
 from test_pipeline import synthetic
 
@@ -86,7 +86,8 @@ class ClusterTests(ClusterBase):
         state = read(self.root / f'results/local_panel/{job}/state.json')
         self.assertEqual(state['stars'], {'123': 'complete', '124': 'failed'})
         self.assertEqual(state['status'], 'completed')
-        self.assertEqual(state['done_by']['123'], 'PC-salon')
+        self.assertEqual(state['done_by']['123'], f'{lan_addresses()[0] if lan_addresses() else "127.0.0.1"} (este PC)')
+        self.assertEqual(self.cluster.details()['helpers'][0]['host'], 'PC-salon')
         result = self.root / f'results/local_panel/{job}/workspace/results/KIC_123'
         frame = pd.read_csv(result / 'candidates.csv')
         self.assertTrue(frame.known_koi.any())
@@ -283,3 +284,84 @@ class TrainingResultTests(ClusterBase):
         state = read(self.root / 'results/local_panel/abcdef0123456789/state.json')
         self.assertEqual(state['stars']['5'], 'pending')
         self.assertEqual(state['attempts']['5'], 1)
+
+
+class SelfUpdateTests(ClusterBase):
+    def client(self):
+        return ayudante.Client(self.url, self.cluster.token, 'aaaaaaaa11111111', 'PC')
+
+    def test_helper_downloads_only_what_differs(self):
+        import hashlib
+        target = Path(self.tmp.name) / 'ayudante_codigo'
+        changed = ayudante.sync_code(self.client(), target)
+        self.assertEqual(set(changed), set(self.cluster.code_manifest))
+        self.assertIn('ayudante.py', changed)
+        self.assertNotIn('AYUDAR.bat', changed)          # Nunca se reescribe el .bat en ejecución
+        self.assertFalse(any(name.startswith(('results', 'data', 'models')) for name in changed))
+        for name, digest in self.cluster.code_manifest.items():
+            self.assertEqual(hashlib.sha256((target / name).read_bytes()).hexdigest(), digest)
+        self.assertEqual(ayudante.sync_code(self.client(), target), [])
+        (target / 'config.py').write_text('# antiguo', encoding='utf-8')
+        self.assertEqual(ayudante.sync_code(self.client(), target), ['config.py'])
+        self.assertFalse(list(target.rglob('*.nuevo')))
+
+    def test_unexpected_paths_and_corrupt_files_are_refused(self):
+        target = Path(self.tmp.name) / 'ayudante_codigo'
+        self.cluster.code_manifest['../fuera.py'] = 'x'
+        with self.assertRaises(ConnectionError):
+            ayudante.sync_code(self.client(), target)
+        del self.cluster.code_manifest['../fuera.py']
+        self.cluster.code_manifest['config.py'] = '0' * 64   # hash que no coincide con el contenido
+        with self.assertRaises(ConnectionError):
+            ayudante.sync_code(self.client(), target)
+        self.assertFalse(target.exists() and any(target.rglob('*.py')))  # nada a medias
+
+    def test_worker_asks_to_restart_when_coordinator_version_changes(self):
+        job = self.manager.create('123', distributed=True)
+        real_claim = self.cluster.claim
+
+        def claim_then_upgrade(*args, **kwargs):
+            task = real_claim(*args, **kwargs)
+            self.cluster.code_version = 'versionnueva0000'  # el panel se reinició con código nuevo
+            return task
+        with patch.object(self.cluster, 'claim', side_effect=claim_then_upgrade):
+            with self.assertRaises(ayudante.Restart):
+                self.helper()
+        # La estrella que le tocó vuelve a la cola, no se pierde.
+        self.assertEqual(read(self.root / f'results/local_panel/{job}/state.json')['stars']['123'], 'pending')
+
+
+class HelperNameTests(ClusterBase):
+    def test_panel_shows_helper_ip_instead_of_hostname(self):
+        self.manager.create('1 2 3', distributed=True)
+        self.cluster.claim('aaaaaaaa11111111', 'DESKTOP-AILPCVR', '192.168.1.44')
+        self.cluster.claim('bbbbbbbb22222222', 'DESKTOP-8CI7A80 #2', '192.168.1.51')
+        names = {h['host']: h['name'] for h in self.cluster.details()['helpers']}
+        self.assertEqual(names, {'DESKTOP-AILPCVR': '192.168.1.44', 'DESKTOP-8CI7A80 #2': '192.168.1.51 #2'})
+        log = (self.root / 'results/local_panel').glob('*/worker.log')
+        self.assertIn('192.168.1.44: INICIO KIC', next(log).read_text(encoding='utf-8'))
+
+
+class BatchOverlapTests(ClusterBase):
+    def test_idle_helpers_take_stars_from_next_batch(self):
+        batches = self.root / 'data/discovery_batches'
+        batches.mkdir(parents=True)
+        for number in range(1, 31):
+            (batches / f'batch_{number:02d}.csv').write_text(
+                'queue_rank,kepid\n' + ''.join(f'{r},{1000 + r}\n' for r in range(number * 10 - 9, number * 10 + 1)),
+                encoding='utf-8')
+        self.cluster.set_distribute_discovery(True)
+        self.manager.start_discovery('kepler')
+        tasks = [self.cluster.claim(f'{n:016x}', f'PC{n}', f'10.0.0.{n}') for n in range(1, 11)]
+        first = tasks[0]['job']
+        self.assertTrue(all(t['job'] == first for t in tasks))      # Lote 1 repartido entero
+        extra = self.cluster.claim('ffffffffffffffff', 'libre', '10.0.0.99')
+        self.assertIsNotNone(extra)                                   # El libre no se queda parado
+        self.assertNotEqual(extra['job'], first)
+        self.assertEqual(extra['kic'], 1011)                          # Primera estrella del lote 2
+        batches_open = [s for s in self.manager.snapshot() if s.get('batch_index')]
+        self.assertEqual(sorted(s['batch_index'] for s in batches_open), [1, 2])  # Sólo uno por delante
+        # Si una estrella del lote 1 vuelve a la cola, se reparte antes que las del lote 2.
+        self.cluster.release(f'{1:016x}', first, tasks[0]['kic'])
+        again = self.cluster.claim('eeeeeeeeeeeeeeee', 'otro', '10.0.0.98')
+        self.assertEqual((again['job'], again['kic']), (first, tasks[0]['kic']))

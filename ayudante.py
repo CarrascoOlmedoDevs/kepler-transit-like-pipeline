@@ -33,6 +33,13 @@ def _plain(value):
     raise TypeError(f'No serializable: {type(value).__name__}')
 
 
+RESTART = 75  # Código de salida: "me he actualizado, vuelve a lanzarme" (lo entiende AYUDAR.bat)
+
+
+class Restart(Exception):
+    """El coordinador tiene código más nuevo: actualizar y relanzar."""
+
+
 class Rejected(Exception):
     """El coordinador rechazó la operación (409/400): no tiene sentido reintentar."""
 
@@ -83,6 +90,66 @@ def retrying(operation, what, attempts=6):
             time.sleep(wait)
 
 
+_local_version = None
+
+
+def local_code_version():
+    """Versión del código con el que arrancó este proceso (misma cuenta que el coordinador)."""
+    global _local_version
+    if _local_version is None:
+        import hashlib
+        from local_panel.cluster import code_snapshot, code_version
+        _local_version = code_version({name: hashlib.sha256(content).hexdigest()
+                                       for name, content in code_snapshot(HERE).items()})
+    return _local_version
+
+
+def sync_code(client, code_dir=HERE):
+    """Descarga del coordinador los archivos de código que difieren. Devuelve los cambiados.
+    Sólo escribe rutas de la lista permitida, verifica cada sha256 y no deja nada a medias."""
+    import hashlib
+    from local_panel.cluster import CODE_FILE
+    manifest = retrying(lambda: client.request('/cluster/v1/code'), 'código')['files']
+    code_dir = Path(code_dir)
+    pending = {}
+    for name, wanted in manifest.items():
+        if not CODE_FILE.fullmatch(name):
+            raise ConnectionError(f'El coordinador ofrece un archivo no permitido: {name[:80]}')
+        path = code_dir / name
+        if path.is_file() and hashlib.sha256(path.read_bytes()).hexdigest() == wanted:
+            continue
+        content = retrying(lambda: client.request('/cluster/v1/code/' + name, timeout=300), name)
+        if hashlib.sha256(content).hexdigest() != wanted:
+            raise ConnectionError(f'{name} llegó corrupto')
+        pending[name] = content
+    for name, content in pending.items():  # Todo descargado y verificado: ahora sí se escribe.
+        path = code_dir / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = path.with_name(path.name + '.nuevo')
+        temporary.write_bytes(content)
+        os.replace(temporary, path)
+    return sorted(pending)
+
+
+def update_from_coordinator(client):
+    """Si el coordinador ejecuta otra versión, la instala aquí. True si hay que relanzar."""
+    info = retrying(lambda: client.request('/cluster/v1/info'), 'info')
+    wanted = info.get('code_version')
+    if not wanted or wanted == local_code_version():
+        return False
+    print(f'El coordinador tiene una versión nueva de Sakanet ({wanted}). Actualizando…', flush=True)
+    changed = sync_code(client)
+    if not changed:
+        return False
+    print('Actualizados: ' + ', '.join(changed[:8]) + (f' y {len(changed) - 8} más' if len(changed) > 8 else ''), flush=True)
+    if any(name.startswith('requirements') for name in changed):
+        import subprocess
+        import sys
+        print('Instalando dependencias nuevas…', flush=True)
+        subprocess.run([sys.executable, '-m', 'pip', 'install', '-q', '-r', str(HERE / 'requirements.txt')], check=False)
+    return True
+
+
 def check_and_sync(client, root):
     """Comprueba versión y sincroniza modelos/catálogos con los del coordinador."""
     from kepler_detector import PIPELINE_VERSION, FEATURE_VERSION
@@ -97,7 +164,7 @@ def check_and_sync(client, root):
     for key, value in mine.items():
         if info.get(key) != value:
             raise SystemExit(f'Versión distinta al coordinador ({key}: {value} frente a {info.get(key)}). '
-                             'Actualiza Sakanet en este equipo (git pull) y vuelve a lanzar.')
+                             'Cierra y vuelve a abrir AYUDAR.bat para que se actualice solo.')
     for name in ASSETS:
         path = root / name
         wanted = info['assets'].get(name)
@@ -227,12 +294,21 @@ def run_worker(server, token, helper, name, root, idle_exit=False, max_tasks=Non
     root = setup(Path(root))
     logging.basicConfig(level=logging.INFO, format=f'%(asctime)s [{name}] %(message)s', datefmt='%H:%M:%S')
     client = Client(server, token, helper, name)
-    check_and_sync(client, root)
+    # Versión del coordinador con la que arranca este proceso (main() ya se ha sincronizado con ella).
+    accepted = check_and_sync(client, root).get('code_version')
     log.info('Conectado a %s', server)
     done, idle, current = 0, 0, None
     try:
         while max_tasks is None or done < max_tasks:
             task = retrying(lambda: client.post('/cluster/v1/claim', caps=['build', 'missions']), 'pedir trabajo', attempts=1000)
+            if accepted and task.get('code_version') and task['code_version'] != accepted:
+                # El coordinador se ha reiniciado con código nuevo: soltar la estrella y actualizarse.
+                if task.get('job'):
+                    try:
+                        client.post('/cluster/v1/release', job=task['job'], kic=task['kic'])
+                    except Exception:
+                        pass
+                raise Restart()
             if not task.get('job'):
                 if idle_exit:
                     break
@@ -256,6 +332,13 @@ def run_worker(server, token, helper, name, root, idle_exit=False, max_tasks=Non
             except Exception:
                 pass
     return done
+
+
+def _worker_process(*args):
+    try:
+        run_worker(*args)
+    except Restart:
+        raise SystemExit(RESTART)
 
 
 def settings(args):
@@ -301,11 +384,20 @@ def main(argv=None):
     server, token, name, helper = settings(args)
     if not 1 <= args.workers <= 8:
         parser.error('--workers debe estar entre 1 y 8')
+    try:
+        if update_from_coordinator(Client(server, token, helper, name)):
+            print('Sakanet actualizado. Reiniciando el ayudante…', flush=True)
+            return RESTART
+    except (ConnectionError, OSError, urllib.error.URLError) as error:
+        print(f'No se pudo comprobar si hay actualización ({error}); se sigue con la versión actual.', flush=True)
     print(f'Ayudante "{name}" -> {server} - {args.workers} proceso(s). Ctrl+C para parar.', flush=True)
     if args.workers == 1:
-        run_worker(server, token, helper, name, args.root, args.idle_exit, parent=args.parent)
+        try:
+            run_worker(server, token, helper, name, args.root, args.idle_exit, parent=args.parent)
+        except Restart:
+            return RESTART  # Al relanzarse, main() descarga la versión nueva.
         return 0
-    processes = [multiprocessing.Process(target=run_worker, args=(
+    processes = [multiprocessing.Process(target=_worker_process, args=(
         server, token, f'{helper}-{n}', f'{name} #{n}', args.root, args.idle_exit, None, args.parent))
         for n in range(1, args.workers + 1)]
     for process_ in processes:
@@ -317,7 +409,7 @@ def main(argv=None):
     except KeyboardInterrupt:
         for process_ in processes:
             process_.join(timeout=30)
-    return 0
+    return RESTART if any(process_.exitcode == RESTART for process_ in processes) else 0
 
 
 if __name__ == '__main__':

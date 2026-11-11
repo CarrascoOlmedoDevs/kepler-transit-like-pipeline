@@ -183,6 +183,7 @@ function renderCluster(cluster) {
     const row = node('div', '');
     row.className = 'helper';
     const name = node('span', `${helper.online ? '🟢' : '⚪'} ${helper.name}`);
+    if (helper.host) name.title = helper.host;  // El nombre del equipo, al pasar el ratón
     if (!helper.online) name.className = 'off';
     const current = helper.current ? 'estrella ' + helper.current.split(':')[1] : (helper.online ? 'esperando' : 'desconectado');
     row.append(name, node('span', `${current} · ${helper.completed} hechas${helper.failed ? ` · ${helper.failed} fallos` : ''}`));

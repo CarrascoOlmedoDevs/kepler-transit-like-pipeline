@@ -40,6 +40,14 @@ after the licensing boundary.
 Third-party software and public astronomical data remain governed by their own
 licenses and terms.
 
+## PolyForm Noncommercial (from 2026-11-11)
+
+From 2026-11-11 the repository is licensed under the PolyForm Noncommercial
+License 1.0.0 (see `LICENSE`). Non-commercial use, modification and redistribution
+are permitted under its terms; commercial use requires written permission.
+Versions published during the proprietary period are covered by this license from
+this date onward.
+
 ## Copyright
 
 Copyright (c) 2026 Javier Carrasco. All rights reserved for proprietary material.

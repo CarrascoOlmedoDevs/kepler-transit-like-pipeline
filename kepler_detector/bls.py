@@ -90,16 +90,27 @@ def result_candidate(result, index):
                        ('period', 'duration', 'transit_time', 'power', 'log_likelihood', 'depth', 'depth_snr')))
 
 
-def _duration_boundary(candidate, durations):
-    return bool(np.isclose(candidate.duration, durations[0], rtol=0, atol=1e-10) or
-                np.isclose(candidate.duration, durations[-1], rtol=0, atol=1e-10))
+SOLAR_DURATION_1YR = 13.0 / 24  # días: tránsito central de un planeta a 1 UA de una estrella tipo Sol
+
+
+def max_duration(period, config):
+    """Duración máxima físicamente plausible (días) para un período dado."""
+    return config.max_duration_factor * SOLAR_DURATION_1YR * (float(period) / 365.25) ** (1 / 3)
+
+
+def duration_limits(periods, curve, config):
+    """Límites duros de la malla de duraciones: cadencia abajo; período, detrending y física arriba."""
+    cadence = float(np.nanmedian(np.diff(curve.time)))
+    lower = max(1.5 * cadence, min(config.durations) / 4)
+    shortest = float(np.min(periods))
+    upper = min(shortest * 0.25, config.flatten_window / 3, max_duration(shortest, config))
+    return lower, max(upper, lower)
 
 
 def _duration_grid(base, periods, curve, config, expand_low=False, expand_high=False):
     values = np.unique(np.asarray(base, dtype=float))
-    cadence = float(np.nanmedian(np.diff(curve.time)))
-    lower_limit = max(1.5 * cadence, min(config.durations) / 4)
-    upper_limit = min(float(np.min(periods)) * 0.25, config.flatten_window / 5)
+    lower_limit, upper_limit = duration_limits(periods, curve, config)
+    values = np.clip(values, lower_limit, upper_limit)
     low, high = float(values[0]), float(values[-1])
     if expand_low and low > lower_limit * 1.01:
         low = max(lower_limit, low / 2)
@@ -115,7 +126,6 @@ def adaptive_duration_power(model, periods, curve, config, oversample=10, max_ro
     durations = _duration_grid(config.durations, periods, curve, config)
     candidate = None
     result = None
-    touched_boundary = False
     for _ in range(max_rounds):
         result = model.power(periods, durations, objective='likelihood', oversample=oversample)
         candidate = result_candidate(result, np.nanargmax(result.power))
@@ -123,24 +133,24 @@ def adaptive_duration_power(model, periods, curve, config, oversample=10, max_ro
         at_high = np.isclose(candidate.duration, durations[-1], rtol=0, atol=1e-10)
         if not (at_low or at_high):
             break
-        touched_boundary = True
         expanded = _duration_grid(durations, periods, curve, config, at_low, at_high)
         if len(expanded) == len(durations) and np.allclose(expanded, durations):
             break
         durations = expanded
     # Refinamiento continuo alrededor del óptimo para no privilegiar antiguos bordes.
-    cadence = float(np.nanmedian(np.diff(curve.time)))
-    lower = max(1.5 * cadence, candidate.duration * 0.65)
-    upper = min(float(np.min(periods)) * 0.25, config.flatten_window / 5,
-                candidate.duration * 1.35)
+    hard_low, hard_high = duration_limits(periods, curve, config)
+    lower = max(hard_low, candidate.duration * 0.65)
+    upper = min(hard_high, candidate.duration * 1.35)
     if upper > lower * 1.01:
         local_durations = np.linspace(lower, upper, 21)
         result = model.power(periods, local_durations, objective='likelihood', oversample=oversample)
         candidate = result_candidate(result, np.nanargmax(result.power))
-        final_boundary = _duration_boundary(candidate, local_durations)
-    else:
-        final_boundary = _duration_boundary(candidate, durations)
-    candidate.duration_at_boundary = bool(touched_boundary or final_boundary)
+    # Alerta sólo si el óptimo final queda en un límite duro (no se pudo ampliar más):
+    # la señal "quiere" ser más larga de lo físicamente posible o más corta que la cadencia.
+    # Que la malla inicial se quedara corta y se ampliara no es sospechoso (2.0 sí lo marcaba).
+    # Tolerancia > un paso de la malla local (~2 %).
+    candidate.duration_at_boundary = bool(candidate.duration >= 0.97 * hard_high or
+                                          candidate.duration <= 1.03 * hard_low)
     return candidate, result
 
 

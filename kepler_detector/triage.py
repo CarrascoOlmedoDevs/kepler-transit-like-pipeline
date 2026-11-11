@@ -1,11 +1,13 @@
 """Conservative review labels for the local panel; never a validation claim."""
 import math
+from .vetting import consistency_flags
 
 
 SEVERE_FLAGS = {
     'odd-even', 'secondary-eclipse', 'phase-0.5-anomaly',
     'poor-transit-coverage', 'single-event-dominated',
     'duration-at-boundary', 'harmonic-duplicate',
+    'inconsistent-depths', 'negative-transit', 'below-noise-floor',
 }
 
 
@@ -26,6 +28,8 @@ def assess_candidate(row):
     transits = int(_number(row, 'number_of_transits'))
     consistency = _number(row, 'transit_depth_consistency')
     flags = set(str(row.get('vetting_flags') or '').split('|')) - {''}
+    # Resultados anteriores a la v2.1 no traen estas alertas: se recalculan de sus tránsitos.
+    flags.update(consistency_flags(row))
     blockers = sorted(flags & SEVERE_FLAGS)
 
     # Modelos entrenados con Kepler aplicados a K2/TESS: sus probabilidades no bastan para "prioritario".

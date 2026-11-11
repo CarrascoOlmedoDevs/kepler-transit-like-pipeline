@@ -1,0 +1,250 @@
+{
+  "status": "complete",
+  "signature": "58ceb25cea3d0366278a66270efdea5b865c2b92ca3e40f03a42daa7059a3429",
+  "kic": 6881353,
+  "config": {
+    "period_min": 0.5,
+    "period_max": 300.0,
+    "durations": [
+      0.05,
+      0.1,
+      0.2,
+      0.3,
+      0.45
+    ],
+    "flatten_window": 3.0,
+    "sigma_clip": 7.0,
+    "coarse_points": 30000,
+    "refine_peaks": 12,
+    "max_planets": 5,
+    "min_snr": 7.1,
+    "min_transits": 2,
+    "match_tolerance": 0.01,
+    "seed": 42,
+    "quarter": null,
+    "save_curves": false,
+    "detrend": "biweight"
+  },
+  "source": {
+    "kic": 6881353,
+    "time_format": "BKJD",
+    "time_scale": "TDB",
+    "bjd_offset": 2454833.0,
+    "flux": "PDCSAP_FLUX",
+    "quality_bitmask": "default",
+    "products": [
+      {
+        "quarter": 0,
+        "filename": "C:\\Users\\saka\\Desktop\\sakanet\\ayudante_datos\\cache\\mast\\mastDownload\\Kepler\\kplr006881353_lc_Q111111111111111111\\kplr006881353-2009131105131_llc.fits",
+        "points": 469
+      },
+      {
+        "quarter": 1,
+        "filename": "C:\\Users\\saka\\Desktop\\sakanet\\ayudante_datos\\cache\\mast\\mastDownload\\Kepler\\kplr006881353_lc_Q111111111111111111\\kplr006881353-2009166043257_llc.fits",
+        "points": 1624
+      },
+      {
+        "quarter": 2,
+        "filename": "C:\\Users\\saka\\Desktop\\sakanet\\ayudante_datos\\cache\\mast\\mastDownload\\Kepler\\kplr006881353_lc_Q111111111111111111\\kplr006881353-2009259160929_llc.fits",
+        "points": 4070
+      },
+      {
+        "quarter": 3,
+        "filename": "C:\\Users\\saka\\Desktop\\sakanet\\ayudante_datos\\cache\\mast\\mastDownload\\Kepler\\kplr006881353_lc_Q111111111111111111\\kplr006881353-2009350155506_llc.fits",
+        "points": 4134
+      },
+      {
+        "quarter": 4,
+        "filename": "C:\\Users\\saka\\Desktop\\sakanet\\ayudante_datos\\cache\\mast\\mastDownload\\Kepler\\kplr006881353_lc_Q111111111111111111\\kplr006881353-2010078095331_llc.fits",
+        "points": 4108
+      },
+      {
+        "quarter": 5,
+        "filename": "C:\\Users\\saka\\Desktop\\sakanet\\ayudante_datos\\cache\\mast\\mastDownload\\Kepler\\kplr006881353_lc_Q111111111111111111\\kplr006881353-2010174085026_llc.fits",
+        "points": 4486
+      },
+      {
+        "quarter": 6,
+        "filename": "C:\\Users\\saka\\Desktop\\sakanet\\ayudante_datos\\cache\\mast\\mastDownload\\Kepler\\kplr006881353_lc_Q111111111111111111\\kplr006881353-2010265121752_llc.fits",
+        "points": 4272
+      },
+      {
+        "quarter": 7,
+        "filename": "C:\\Users\\saka\\Desktop\\sakanet\\ayudante_datos\\cache\\mast\\mastDownload\\Kepler\\kplr006881353_lc_Q111111111111111111\\kplr006881353-2010355172524_llc.fits",
+        "points": 4226
+      },
+      {
+        "quarter": 10,
+        "filename": "C:\\Users\\saka\\Desktop\\sakanet\\ayudante_datos\\cache\\mast\\mastDownload\\Kepler\\kplr006881353_lc_Q111111111111111111\\kplr006881353-2011271113734_llc.fits",
+        "points": 4441
+      },
+      {
+        "quarter": 8,
+        "filename": "C:\\Users\\saka\\Desktop\\sakanet\\ayudante_datos\\cache\\mast\\mastDownload\\Kepler\\kplr006881353_lc_Q111111111111111111\\kplr006881353-2011073133259_llc.fits",
+        "points": 3106
+      },
+      {
+        "quarter": 9,
+        "filename": "C:\\Users\\saka\\Desktop\\sakanet\\ayudante_datos\\cache\\mast\\mastDownload\\Kepler\\kplr006881353_lc_Q111111111111111111\\kplr006881353-2011177032512_llc.fits",
+        "points": 4610
+      },
+      {
+        "quarter": 11,
+        "filename": "C:\\Users\\saka\\Desktop\\sakanet\\ayudante_datos\\cache\\mast\\mastDownload\\Kepler\\kplr006881353_lc_Q111111111111111111\\kplr006881353-2012004120508_llc.fits",
+        "points": 4473
+      },
+      {
+        "quarter": 12,
+        "filename": "C:\\Users\\saka\\Desktop\\sakanet\\ayudante_datos\\cache\\mast\\mastDownload\\Kepler\\kplr006881353_lc_Q111111111111111111\\kplr006881353-2012088054726_llc.fits",
+        "points": 3550
+      },
+      {
+        "quarter": 13,
+        "filename": "C:\\Users\\saka\\Desktop\\sakanet\\ayudante_datos\\cache\\mast\\mastDownload\\Kepler\\kplr006881353_lc_Q111111111111111111\\kplr006881353-2012179063303_llc.fits",
+        "points": 4241
+      },
+      {
+        "quarter": 14,
+        "filename": "C:\\Users\\saka\\Desktop\\sakanet\\ayudante_datos\\cache\\mast\\mastDownload\\Kepler\\kplr006881353_lc_Q111111111111111111\\kplr006881353-2012277125453_llc.fits",
+        "points": 4269
+      },
+      {
+        "quarter": 16,
+        "filename": "C:\\Users\\saka\\Desktop\\sakanet\\ayudante_datos\\cache\\mast\\mastDownload\\Kepler\\kplr006881353_lc_Q111111111111111111\\kplr006881353-2013098041711_llc.fits",
+        "points": 3534
+      },
+      {
+        "quarter": 15,
+        "filename": "C:\\Users\\saka\\Desktop\\sakanet\\ayudante_datos\\cache\\mast\\mastDownload\\Kepler\\kplr006881353_lc_Q111111111111111111\\kplr006881353-2013011073258_llc.fits",
+        "points": 4366
+      },
+      {
+        "quarter": 17,
+        "filename": "C:\\Users\\saka\\Desktop\\sakanet\\ayudante_datos\\cache\\mast\\mastDownload\\Kepler\\kplr006881353_lc_Q111111111111111111\\kplr006881353-2013131215648_llc.fits",
+        "points": 1284
+      }
+    ],
+    "quarter_requested": null,
+    "preprocessing": {
+      "period_min": 0.5,
+      "period_max": 300.0,
+      "durations": [
+        0.05,
+        0.1,
+        0.2,
+        0.3,
+        0.45
+      ],
+      "flatten_window": 3.0,
+      "sigma_clip": 7.0,
+      "coarse_points": 30000,
+      "refine_peaks": 12,
+      "max_planets": 5,
+      "min_snr": 7.1,
+      "min_transits": 2,
+      "match_tolerance": 0.01,
+      "seed": 42,
+      "quarter": null,
+      "save_curves": false,
+      "detrend": "biweight"
+    }
+  },
+  "feature_version": "2.0",
+  "raw_detections": 2,
+  "candidate_families": 2,
+  "candidates": 2,
+  "duplicates_removed": 0,
+  "harmonic_detections": 0,
+  "duration_at_boundary": 0,
+  "inverted_peaks": [
+    [
+      289.6714,
+      7.74
+    ],
+    [
+      299.6298,
+      8.39
+    ],
+    [
+      228.9435,
+      7.42
+    ],
+    [
+      277.2314,
+      8.43
+    ],
+    [
+      202.1156,
+      7.15
+    ],
+    [
+      144.8311,
+      7.89
+    ],
+    [
+      179.9111,
+      8.35
+    ],
+    [
+      92.9533,
+      8.57
+    ],
+    [
+      185.9458,
+      7.95
+    ],
+    [
+      290.3177,
+      7.87
+    ],
+    [
+      208.3346,
+      8.34
+    ],
+    [
+      72.3993,
+      8.13
+    ],
+    [
+      149.7287,
+      7.42
+    ],
+    [
+      138.6379,
+      6.92
+    ],
+    [
+      104.1673,
+      7.01
+    ],
+    [
+      89.9458,
+      6.69
+    ],
+    [
+      145.1672,
+      6.22
+    ],
+    [
+      114.4608,
+      5.18
+    ],
+    [
+      101.0501,
+      5.47
+    ],
+    [
+      1.0217,
+      3.45
+    ]
+  ],
+  "stop_reason": "strongest remaining peak below SNR/event threshold",
+  "seconds": 318.125,
+  "rf_available": true,
+  "mask_width_duration_range": [
+    1.5,
+    4.0
+  ],
+  "cnn_available": false,
+  "warning": "Candidatos de tránsito; no confirmación ni descubrimiento planetario"
+}

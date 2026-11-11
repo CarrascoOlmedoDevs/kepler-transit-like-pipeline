@@ -1,10 +1,70 @@
+import json
 import math
 import numpy as np
+
+# Dispersión fraccional de profundidad tolerada entre tránsitos reales (muestreo del
+# ingreso, variabilidad estelar): evita marcar planetas profundos con errores diminutos.
+DEPTH_SCATTER_FLOOR = 0.15
+DEPTH_PVALUE = 0.01
+DEPTH_REDUCED_CHI2 = 3.0  # El ruido rojo infla chi2 ~1.5-2x incluso en señales reales.
+NOISE_FLOOR_MARGIN = 1.1  # La señal debe superar así el mejor "tránsito" de la curva invertida.
 
 
 def finite(feature, name, default=0.0):
     value = float(feature.get(name, default))
     return value if math.isfinite(value) else default
+
+
+def _series(value):
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except ValueError:
+            return np.array([])
+    try:
+        return np.asarray(value, dtype=float).ravel()
+    except (TypeError, ValueError):
+        return np.array([])
+
+
+def depth_consistency(feature):
+    """¿Son compatibles entre sí las profundidades de cada tránsito? (chi2 frente a su media).
+
+    Un tránsito real se repite con la misma profundidad; el ruido correlacionado apila
+    eventos desiguales, alguno nulo o incluso negativo (el flujo sube)."""
+    nan = float('nan')
+    result = {'depth_chi2': nan, 'depth_chi2_dof': 0, 'depth_chi2_pvalue': nan,
+              'min_transit_snr': nan, 'inconsistent_depths': False, 'negative_transit': False}
+    depths = _series(feature.get('individual_transit_depths'))
+    snrs = _series(feature.get('individual_transit_snr'))
+    if len(depths) != len(snrs) or not len(depths):
+        return result
+    good = np.isfinite(depths) & np.isfinite(snrs) & (np.abs(snrs) > 1e-9)
+    depths, snrs = depths[good], snrs[good]
+    if not len(depths):
+        return result
+    errors = np.abs(depths / snrs)
+    result['min_transit_snr'] = float(snrs.min())
+    # Corrección por número de eventos: con cientos de tránsitos alguno sale negativo por azar.
+    from scipy.special import chdtrc, ndtri  # Funciones directas: el panel las llama por fila.
+    result['negative_transit'] = bool(snrs.min() < ndtri(DEPTH_PVALUE / len(snrs)))
+    if len(depths) < 3:
+        return result
+    mean = np.average(depths, weights=1 / errors ** 2)
+    errors = np.hypot(errors, DEPTH_SCATTER_FLOOR * abs(mean))
+    mean = np.average(depths, weights=1 / errors ** 2)
+    value = float(np.sum(((depths - mean) / errors) ** 2))
+    dof = len(depths) - 1
+    pvalue = float(chdtrc(dof, value))
+    result.update(depth_chi2=value, depth_chi2_dof=dof, depth_chi2_pvalue=pvalue,
+                  inconsistent_depths=bool(pvalue < DEPTH_PVALUE and value / dof > DEPTH_REDUCED_CHI2))
+    return result
+
+
+def consistency_flags(feature):
+    measured = depth_consistency(feature)
+    return [name for name, active in (('inconsistent-depths', measured['inconsistent_depths']),
+                                      ('negative-transit', measured['negative_transit'])) if active]
 
 
 def vet(feature, min_snr=7.1, min_transits=2):
@@ -38,6 +98,11 @@ def vet(feature, min_snr=7.1, min_transits=2):
         flags.append('poor-transit-coverage')
     if finite(feature, 'max_single_transit_contribution') > 0.5:
         flags.append('single-event-dominated')
+    measured = depth_consistency(feature)
+    flags.extend(consistency_flags(feature))
+    floor = finite(feature, 'noise_floor_snr', float('nan'))
+    if math.isfinite(floor) and finite(feature, 'depth_snr') < NOISE_FLOOR_MARGIN * floor:
+        flags.append('below-noise-floor')
     if not math.isfinite(float(feature.get('odd_even_sigma', float('nan')))):
         flags.append('odd-even-unavailable')
     if not math.isfinite(float(feature.get('secondary_snr', float('nan')))):
@@ -47,7 +112,9 @@ def vet(feature, min_snr=7.1, min_transits=2):
     return {'vetting_flags': '|'.join(flags), 'classification': status,
             'secondary_eclipse': secondary_eclipse,
             'secondary_brightening': secondary_brightening,
-            'phase_0_5_anomaly': phase_anomaly}
+            'phase_0_5_anomaly': phase_anomaly,
+            **{name: measured[name] for name in
+               ('depth_chi2', 'depth_chi2_dof', 'depth_chi2_pvalue', 'min_transit_snr')}}
 
 
 def priority_score(feature, rf_probability, flags=None):
@@ -65,6 +132,9 @@ def priority_score(feature, rf_probability, flags=None):
         'poor-transit-coverage': 0.70,
         'harmonic-duplicate': 0.65,
         'single-event-dominated': 0.65,
+        'inconsistent-depths': 0.50,
+        'negative-transit': 0.60,
+        'below-noise-floor': 0.40,
     }
     penalty = math.prod(penalties[name] for name in active if name in penalties)
     base = 100 * (0.45 * snr + 0.20 * events + 0.15 * fit + 0.20 * consistency)

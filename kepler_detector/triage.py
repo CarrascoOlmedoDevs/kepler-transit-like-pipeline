@@ -7,8 +7,32 @@ SEVERE_FLAGS = {
     'odd-even', 'secondary-eclipse', 'phase-0.5-anomaly',
     'poor-transit-coverage', 'single-event-dominated',
     'duration-at-boundary', 'harmonic-duplicate',
-    'inconsistent-depths', 'negative-transit', 'below-noise-floor',
+    'inconsistent-depths', 'negative-transit', 'below-noise-floor', 'systematic-epochs',
 }
+
+# Señales de período largo: muchas son ruido (en Sakanet, una de cada cuatro estrellas tiene alguna),
+# así que para "revisar" se pide más SNR.
+LONG_PERIOD_DAYS = 150.0
+LONG_PERIOD_MIN_SNR = 10.0
+
+# Días malos de Kepler (systematics.bad_days), fijados por el panel con todas las estrellas analizadas.
+_BAD_DAYS = []
+
+
+def set_bad_days(days):
+    global _BAD_DAYS
+    _BAD_DAYS = list(days or [])
+
+
+def systematic_flag(row, days=None):
+    """'systematic-epochs' si dos tránsitos (o uno de muy pocos) caen en días malos de Kepler."""
+    from .systematics import epochs_on_bad_days
+    mission = str(row.get('mission') or 'kepler').lower()
+    if mission != 'kepler':
+        return False
+    hits = epochs_on_bad_days(row, _BAD_DAYS if days is None else days)
+    transits = _number(row, 'number_of_transits')
+    return hits >= 2 or (hits >= 1 and 0 < transits <= 3)
 
 
 def _number(row, name, default=0.0):
@@ -30,7 +54,11 @@ def assess_candidate(row):
     flags = set(str(row.get('vetting_flags') or '').split('|')) - {''}
     # Resultados anteriores a la v2.1 no traen estas alertas: se recalculan de sus tránsitos.
     flags.update(consistency_flags(row))
+    if systematic_flag(row):
+        flags.add('systematic-epochs')
     blockers = sorted(flags & SEVERE_FLAGS)
+    period = _number(row, 'period_days')
+    min_snr = LONG_PERIOD_MIN_SNR if period > LONG_PERIOD_DAYS else 8
 
     # Modelos entrenados con Kepler aplicados a K2/TESS: sus probabilidades no bastan para "prioritario".
     calibrated = str(row.get('model_calibrated', 'True')).strip().lower() not in ('false', '0')
@@ -43,7 +71,7 @@ def assess_candidate(row):
         and not blockers
     )
     review = (
-        not serious and not blockers and snr >= 8 and transits >= 3
+        not serious and not blockers and snr >= min_snr and transits >= 3
         and priority >= 25 and (rf >= 0.50 or cnn >= 0.50)
     )
     if serious:
@@ -57,6 +85,9 @@ def assess_candidate(row):
     elif blockers:
         label = 'descartable'
         reason = 'alertas: ' + ', '.join(blockers)
+    elif period > LONG_PERIOD_DAYS and 8 <= snr < LONG_PERIOD_MIN_SNR:
+        label = 'débil'
+        reason = f'período largo (> {LONG_PERIOD_DAYS:.0f} d): exige SNR ≥ {LONG_PERIOD_MIN_SNR:.0f} para revisar'
     else:
         label = 'débil'
         reason = 'no alcanza los umbrales conservadores de revisión'

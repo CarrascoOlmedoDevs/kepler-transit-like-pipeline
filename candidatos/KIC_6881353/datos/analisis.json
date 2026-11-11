@@ -1,0 +1,142 @@
+{
+  "kic": 6881353,
+  "periodo_d": 233.9407736958617,
+  "epoca_bkjd": 349.9347535910972,
+  "duracion_h": 12.636,
+  "tránsitos": {
+    "transitos": [
+      {
+        "epoca_bkjd": 349.935,
+        "puntos_dentro": 0,
+        "cobertura": 0.0
+      },
+      {
+        "epoca_bkjd": 583.876,
+        "puntos_dentro": 25,
+        "cobertura": 0.97,
+        "profundidad_ppm": 59.7,
+        "error_ppm": 11.4,
+        "snr": 5.22,
+        "rms_local_ppm": 57.1,
+        "mayor_hueco_h": 1.0
+      },
+      {
+        "epoca_bkjd": 817.816,
+        "puntos_dentro": 25,
+        "cobertura": 0.97,
+        "profundidad_ppm": 22.5,
+        "error_ppm": 13.3,
+        "snr": 1.7,
+        "rms_local_ppm": 66.4,
+        "mayor_hueco_h": 1.0
+      },
+      {
+        "epoca_bkjd": 1051.757,
+        "puntos_dentro": 26,
+        "cobertura": 1.01,
+        "profundidad_ppm": 60.7,
+        "error_ppm": 12.3,
+        "snr": 4.91,
+        "rms_local_ppm": 63.0,
+        "mayor_hueco_h": 1.0
+      },
+      {
+        "epoca_bkjd": 1285.698,
+        "puntos_dentro": 26,
+        "cobertura": 1.01,
+        "profundidad_ppm": 62.4,
+        "error_ppm": 15.5,
+        "snr": 4.04,
+        "rms_local_ppm": 78.8,
+        "mayor_hueco_h": 1.0
+      },
+      {
+        "epoca_bkjd": 1519.639,
+        "puntos_dentro": 25,
+        "cobertura": 0.97,
+        "profundidad_ppm": 84.2,
+        "error_ppm": 10.3,
+        "snr": 8.2,
+        "rms_local_ppm": 51.3,
+        "mayor_hueco_h": 1.0
+      }
+    ],
+    "profundidad_media_ppm": 60.8,
+    "chi2": 13.47,
+    "grados_libertad": 4
+  },
+  "centroides": {
+    "disponible": true,
+    "eventos": [
+      {
+        "quarter": 6,
+        "epoca_bkjd": 583.876,
+        "dcol_mpix": 0.23908016967567391,
+        "ecol_mpix": 0.04522984925978178,
+        "drow_mpix": -0.1584259078344985,
+        "erow_mpix": 0.03310070670113873
+      },
+      {
+        "quarter": 9,
+        "epoca_bkjd": 817.816,
+        "dcol_mpix": 0.08202686009155968,
+        "ecol_mpix": 0.021065600752768174,
+        "drow_mpix": 0.04919413915104087,
+        "erow_mpix": 0.021693357471654053
+      },
+      {
+        "quarter": 11,
+        "epoca_bkjd": 1051.757,
+        "dcol_mpix": 0.16765297563982637,
+        "ecol_mpix": 0.04469786428072482,
+        "drow_mpix": -0.19905863768179607,
+        "erow_mpix": 0.031730128200976135
+      },
+      {
+        "quarter": 14,
+        "epoca_bkjd": 1285.698,
+        "dcol_mpix": -0.17878574968262978,
+        "ecol_mpix": 0.020247594884522883,
+        "drow_mpix": 0.07157679417210042,
+        "erow_mpix": 0.019817670490796788
+      },
+      {
+        "quarter": 16,
+        "epoca_bkjd": 1519.639,
+        "dcol_mpix": 0.06962746114083984,
+        "ecol_mpix": 0.01785925138130111,
+        "drow_mpix": -0.2249608852162055,
+        "erow_mpix": 0.02395008667989714
+      }
+    ],
+    "col_mpix": 0.019,
+    "col_error_mpix": 0.011,
+    "row_mpix": -0.054,
+    "row_error_mpix": 0.011,
+    "desplazamiento_mpix": 0.057,
+    "significancia_sigma": 3.68,
+    "desplazamiento_mas": 0.23
+  },
+  "forma": {
+    "profundidad_ppm": 60.4,
+    "error_profundidad_ppm": 5.9,
+    "t14_h": 13.45,
+    "error_t14_h": 0.66,
+    "ingreso_h": 0.65,
+    "error_ingreso_h": 0.6,
+    "desfase_centro_h": -0.19,
+    "chi2_reducido": 1.174,
+    "radio_planeta_rtierra": 1.24,
+    "densidad_estelar_solar": 0.312,
+    "a_sobre_rs": 108.3,
+    "t14_central_esperada_h": 16.62,
+    "parametro_impacto_b": 0.59,
+    "forma_compatible": true
+  },
+  "resumen": [
+    "1 tránsito(s) casi sin señal: BKJD 817.816 (SNR 1.7, cobertura 0.97, hueco 1.0 h)",
+    "profundidades poco compatibles entre tránsitos",
+    "CENTROIDE DESPLAZADO 3.68 σ: posible binaria de fondo",
+    "duración compatible con la estrella (b ≈ 0.59)"
+  ]
+}

@@ -132,8 +132,13 @@ def centroid_test(series, period, epoch, dur, out):
         d = np.array([s[f'd{name}_mpix'] for s in shifts])
         e = np.array([s[f'e{name}_mpix'] for s in shifts])
         w = 1 / e ** 2
-        result[f'{name}_mpix'] = round(float((d * w).sum() / w.sum()), 3)
-        result[f'{name}_error_mpix'] = round(float(1 / np.sqrt(w.sum())), 3)
+        mean = float((d * w).sum() / w.sum())
+        # El ruido de apuntado está correlacionado: si los eventos discrepan entre sí más que
+        # sus errores formales, se inflan los errores con esa dispersión (chi2 reducido).
+        scale = np.sqrt(max(1.0, np.sum(((d - mean) / e) ** 2) / max(len(d) - 1, 1))) if len(d) > 1 else 1.0
+        result[f'{name}_mpix'] = round(mean, 3)
+        result[f'{name}_error_mpix'] = round(float(scale / np.sqrt(w.sum())), 3)
+        result[f'{name}_inflado'] = round(float(scale), 2)
     total = np.hypot(result['col_mpix'], result['row_mpix'])
     error = np.hypot(result['col_error_mpix'], result['row_error_mpix'])
     result['desplazamiento_mpix'] = round(float(total), 3)

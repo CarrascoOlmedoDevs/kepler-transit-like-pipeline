@@ -1,7 +1,7 @@
 # KIC 6881353: candidato a tránsito de 234 días
 
 **Estado: candidato débil, no confirmado.** Nada de lo que hay aquí confirma un planeta.
-Autor: Javier Carrasco (Saka) · detectado con Sakanet (pipeline v2.2) · informe del 11 de noviembre de 2026 (versión 2: radio estelar corregido).
+Autor: Javier Carrasco (Saka) · detectado con Sakanet (pipeline v2.2) · informe del 11 de noviembre de 2026 (versión 3: radio estelar corregido, datos regenerados y prueba pendiente de la vecina).
 
 ## Resumen
 
@@ -52,7 +52,7 @@ datos de Kepler no pueden descartarlo.
 | Jackknife | SNR mínimo 81 % | estable |
 | Forma y duración | ingreso 0,65 h, b ≈ 0,85 | compatible con un planeta pequeño |
 | Centroide de flujo | ≈ 0,6 σ | sin desplazamiento |
-| Imagen diferencia | 3,2″ ± 3″ (0,7 σ) | sale de la estrella; excluye fuentes a más de ~10″ |
+| Imagen diferencia | 3,2″ ± 3″ (0,7 σ) | compatible con la estrella, pero los centroides por evento están muy dispersos: sólo excluye fuentes a más de ~10″ y **no descarta la vecina de 2,65″** |
 
 | Tránsito (BKJD) | Trimestre | Profundidad | SNR |
 | --- | --- | --- | --- |
@@ -67,8 +67,8 @@ El tránsito de Q9 es débil porque el flujo de alrededor también está bajo (e
 ![Tránsitos individuales](graficas/transitos_individuales.png)
 ![Imágenes diferencia](graficas/imagenes_diferencia.png)
 
-Nota sobre `datos/analisis.json`: su sección de centroides se generó antes de corregir los errores (dice 3,68 σ).
-Con los errores inflados por la dispersión entre eventos, el desplazamiento baja a unos 0,6 σ.
+Los datos de `datos/analisis.json` corresponden a la versión 3 (radio estelar 2,29 R☉ y errores de centroide
+inflados por la dispersión entre eventos).
 
 ## Vecinos en Gaia DR3 (30″)
 
@@ -86,6 +86,10 @@ Eclipse necesario = 60 ppm × 10^(0,4·ΔG).
 
 La vecina de 2,65″ está justo al sur del objetivo (ángulo de posición 182°). La imagen diferencia sitúa la luz que falta
 hacia el este (+3,1″ E, +0,5″ N, ±3″), lejos de ella, pero sólo a ≈ 1,7 σ: la desfavorece sin descartarla.
+La prueba directa sería medir el brillo de esa vecina por separado durante un tránsito previsto
+(próximos: 3 abr 2027 ~20:00 UTC y 23 nov 2027 ~19:00 UTC, ±7 h): un eclipse de ~1 % en una estrella
+G = 17,4 resuelta a 2,65″ es medible desde tierra con buen seeing. La fotometría por época de Gaia DR4
+también podría captarlo si alguna observación cae dentro de una ventana.
 
 ## Conclusión y seguimiento
 

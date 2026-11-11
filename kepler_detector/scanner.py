@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from astropy.timeseries import BoxLeastSquares
-from .mast import download, save_curve
+from .mast import download, save_curve, Curve
 from .preprocessing import preprocess
 from .bls import (search, transit_mask, duplicate, harmonic_info, CandidateFamily)
 from .features import extract, transit_consistency, FEATURES, CONSISTENCY_FEATURES
@@ -58,6 +58,30 @@ def adaptive_mask(curve, available, candidate, target_effectiveness=0.8,
         if effectiveness >= target_effectiveness:
             break
     return best[1], best[0], best[2], best[3]
+
+
+def inverted_peaks(curve, config):
+    """[(periodo, SNR)] de los "tránsitos" de la curva invertida.
+
+    Invertida, ningún tránsito real puede aparecer como caída: lo que BLS encuentre es
+    lo que el ruido de esta estrella fabrica por sí solo."""
+    flipped = Curve(curve.time, 2.0 - curve.flux, curve.error, curve.segment, curve.metadata.copy())
+    peaks, _ = search(flipped, config)
+    found = []
+    for peak in peaks:
+        try:
+            measured = extract(flipped, peak)
+        except ValueError:
+            continue
+        if measured['number_of_transits'] >= config.min_transits and np.isfinite(measured['depth_snr']):
+            found.append((float(peak.period), float(measured['depth_snr'])))
+    return found
+
+
+def noise_floor(peaks, period, span=3.0):
+    """Mayor SNR invertido entre periodos comparables (factor `span`); NaN si no hay ninguno."""
+    comparable = [snr for p, snr in peaks if 1 / span <= p / period <= span]
+    return max(comparable) if comparable else float('nan')
 
 
 def build_families(rows, candidates, time):
@@ -176,10 +200,12 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None, mission
             logger.warning('RF entrenado con sólo %d señales: modelo de prueba, sin rendimiento validado',
                            artifact.get('train_rows', 0))
         trained = artifact.get('build_manifest', {}).get('config', {})
-        for key in ('flatten_window', 'sigma_clip', 'quarter'):
-            if key in trained and trained[key] != config.to_dict()[key]:
+        for key in ('flatten_window', 'detrend', 'sigma_clip', 'quarter'):
+            # Modelos anteriores a la v2.2 no guardan 'detrend': se entrenaron con mediana.
+            before = trained.get(key, 'median') if key == 'detrend' and trained else trained.get(key)
+            if (key in trained or (key == 'detrend' and trained)) and before != config.to_dict()[key]:
                 logger.warning('Distribución diferente al entrenamiento: %s (%s frente a %s)',
-                               key, config.to_dict()[key], trained[key])
+                               key, config.to_dict()[key], before)
     # Metadata de ejecución incompleta invalida un checkpoint previo antes de escribir figuras.
     atomic_json({'status': 'running', 'signature': sig}, meta_path)
     if semaphore is None:
@@ -203,6 +229,7 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None, mission
         tce_catalog = pd.read_csv(tce_path) if tce_path.exists() else None
     available = np.ones(len(curve.time), dtype=bool)
     found, rows, first_result = [], [], None
+    flipped = None  # Sólo se calcula si alguna señal supera los umbrales (cuesta una búsqueda BLS).
     stop_reason = 'max_detections reached'
     for iteration in range(config.max_planets):
         residual = curve.subset(available)
@@ -229,7 +256,11 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None, mission
             stop_reason = 'strongest remaining peak below SNR/event threshold'
             break
         rf = float(predict(artifact, [features])[0]) if artifact is not None else np.nan
-        combined = {**features, **consistency}
+        if flipped is None:
+            flipped = inverted_peaks(curve, config)
+        combined = {**features, **consistency,
+                    'noise_floor_snr': noise_floor(flipped, selected.period),
+                    'inverted_max_snr': max((snr for _, snr in flipped), default=float('nan'))}
         cnn_probability = np.nan
         if cnn_predictor is not None:
             try:
@@ -289,6 +320,7 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None, mission
                  'duplicates_removed': sum(row['family_relation'] == 'alias' for row in rows),
                  'harmonic_detections': sum(row['family_relation'] == 'harmonic' for row in rows),
                  'duration_at_boundary': sum(bool(row['duration_at_boundary']) for row in rows),
+                 'inverted_peaks': [[round(p, 4), round(snr, 2)] for p, snr in flipped or []],
                  'stop_reason': stop_reason, 'seconds': time.monotonic() - started,
                  'rf_available': artifact is not None, 'mask_width_duration_range': [1.5, 4.0],
                  'cnn_available': cnn_predictor is not None,

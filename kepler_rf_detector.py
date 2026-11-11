@@ -11,6 +11,8 @@ def analysis_options(parser):
     parser.add_argument('--period-min', type=float, default=0.5, help='Días; modo search')
     parser.add_argument('--period-max', type=float, default=300.0, help='Días; limitado también por baseline')
     parser.add_argument('--durations', type=float, nargs='+', default=[0.05, 0.1, 0.2, 0.3, 0.45], help='Duraciones BLS en días')
+    parser.add_argument('--detrend', choices=('median', 'biweight'), default='biweight',
+                        help='Filtro de detrending')
     parser.add_argument('--flatten-window', type=float, default=3.0, help='Ventana de detrending en días')
     parser.add_argument('--max-duration-factor', type=float, default=2.5,
                         help='Duración máxima = factor x tránsito central solar (13 h a 1 año, escala P^(1/3))')

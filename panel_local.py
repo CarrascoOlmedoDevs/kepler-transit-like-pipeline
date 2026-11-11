@@ -91,6 +91,8 @@ def make_server(root=ROOT, port=8768, manager=None):
                 else:
                     return self.send({'error': 'No encontrado'}, 404)
                 return self.send(target.read_bytes(), mime=mimetypes.guess_type(target.name)[0] or 'application/octet-stream')
+            except ConnectionError:
+                return  # El navegador cerró la conexión (recarga o cambio de página): nada que enviar.
             except (ValueError, FileNotFoundError, OSError) as exc:
                 return self.send({'error': str(exc)}, 404)
 

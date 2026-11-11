@@ -14,6 +14,8 @@ class Config:
     # 3 d: elimina la variabilidad de ~1 día que la BLS confundía con tránsitos (2.0 usaba 5 d).
     # La mediana conserva tránsitos que ocupan hasta 1/3 de la ventana (duración máxima 1 d).
     flatten_window: float = 3.0
+    # 'biweight' sigue la variabilidad lenta sin rellenar tránsitos; 'median' es el filtro de la v2.0.
+    detrend: str = 'biweight'
     sigma_clip: float = 7.0
     coarse_points: int = 30000
     refine_peaks: int = 12
@@ -32,6 +34,8 @@ class Config:
             raise ValueError('Duraciones positivas requeridas')
         if max(self.durations) >= self.period_min:
             raise ValueError('Cada duración debe ser menor que period_min')
+        if self.detrend not in ('median', 'biweight'):
+            raise ValueError("detrend debe ser 'median' o 'biweight'")
         if self.max_duration_factor <= 0:
             raise ValueError('max_duration_factor debe ser positivo')
         if self.flatten_window < 3 * max(self.durations):

@@ -34,8 +34,11 @@ def assess_candidate(row):
 
     # Modelos entrenados con Kepler aplicados a K2/TESS: sus probabilidades no bastan para "prioritario".
     calibrated = str(row.get('model_calibrated', 'True')).strip().lower() not in ('false', '0')
+    # Sin CNN propia de la misión (TESS con RF propio), el RF solo debe ser más exigente.
+    cnn_calibrated = str(row.get('cnn_calibrated', 'True')).strip().lower() not in ('false', '0')
+    models_agree = (rf >= 0.65 and cnn >= 0.60) if cnn_calibrated else rf >= 0.80
     serious = (
-        calibrated and rf >= 0.65 and cnn >= 0.60 and priority >= 35
+        calibrated and models_agree and priority >= 35
         and snr >= 10 and transits >= 3 and consistency >= 0.50
         and not blockers
     )
@@ -45,7 +48,8 @@ def assess_candidate(row):
     )
     if serious:
         label = 'prioritario'
-        reason = 'RF y CNN altos; señal repetida, consistente y sin alertas graves'
+        reason = ('RF y CNN altos; señal repetida, consistente y sin alertas graves' if cnn_calibrated else
+                  'RF propio de la misión muy alto; señal repetida, consistente y sin alertas graves')
     elif review:
         label = 'revisar'
         reason = ('señal sin alertas graves; modelo Kepler no calibrado para esta misión, revisar a mano'

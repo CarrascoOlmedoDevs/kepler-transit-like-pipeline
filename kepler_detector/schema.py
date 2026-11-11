@@ -31,16 +31,18 @@ def compatible(metadata):
         for key in ('feature_version', 'feature_schema_hash', 'feature_columns'))
 
 
-def read_manifest(root):
+def read_manifest(root, mission='kepler'):
+    from .ml_paths import get
     try:
-        return json.loads((root / 'data/build_manifest.json').read_text(encoding='utf-8'))
+        return json.loads((root / get(mission).manifest).read_text(encoding='utf-8'))
     except (OSError, ValueError):
         return {}
 
 
-def validate_dataset(root):
-    manifest = read_manifest(root)
+def validate_dataset(root, mission='kepler'):
+    manifest = read_manifest(root, mission)
     if not compatible(manifest):
+        option = '' if mission == 'kepler' else f' --mission {mission}'
         raise ValueError('Training feature dataset incompatible with current feature schema. '
-                         'Rebuild using: python kepler_rf_detector.py build --per-class 500 --force')
+                         f'Rebuild using: python kepler_rf_detector.py build{option} --per-class 500 --force')
     return manifest

@@ -27,7 +27,7 @@ MAX_ATTEMPTS = 2             # Fallos en ayudantes distintos antes de marcarla f
 MAX_UPLOAD = 30 * 1024 * 1024
 MAX_UNPACKED = 80 * 1024 * 1024
 HELPER_TTL = 120             # Ayudante "conectado" si habló en los últimos 2 min.
-ASSETS = ('models/kepler_rf.joblib', 'models/kepler_exominer_lite.keras',
+ASSETS = ('models/kepler_rf.joblib', 'models/tess_rf.joblib', 'models/kepler_exominer_lite.keras',
           'models/kepler_exominer_lite_metadata.json', 'data/koi_dr25.csv', 'data/tce_dr25.csv',
           'data/tess_toi.csv')
 RESULT_FILES = re.compile(r'(candidates|detections)\.csv|metadata\.json|'
@@ -239,6 +239,9 @@ class Cluster:
                     continue  # Ayudante de una versión anterior: sólo recibe análisis normales.
                 if state.get('mission', 'kepler') != 'kepler' and 'missions' not in caps:
                     continue  # Ayudantes antiguos sólo saben analizar Kepler.
+                if state.get('task') == 'build' and state.get('mission', 'kepler') != 'kepler' \
+                        and 'build-missions' not in caps:
+                    continue  # Medirían el TIC como si fuera un KIC.
                 for kic in map(str, state['ids']):
                     if state['stars'][kic] != 'pending':
                         continue

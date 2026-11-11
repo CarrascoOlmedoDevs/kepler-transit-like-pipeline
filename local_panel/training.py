@@ -47,30 +47,35 @@ def _plan(root, per_class, counts, start, star_ids, chosen):
     return ids, signals, index
 
 
-def create_job(manager, per_class):
+def _mission(state):
+    return state.get('build', {}).get('mission', 'kepler')
+
+
+def create_job(manager, per_class, mission='kepler'):
     if not isinstance(per_class, int) or not 2 <= per_class <= 5000:
         raise ValueError('Ejemplos por clase: entero entre 20 y 5000.')
-    from kepler_detector.builder import selection
-    from kepler_detector.catalog import get_catalog
+    if mission not in ('kepler', 'tess'):
+        raise ValueError('Misión de entrenamiento: kepler o tess')
+    from kepler_detector.builder import labelled
     root = manager.root
-    catalog = get_catalog(root)
     config = _config()
-    chosen, star_ids = selection(catalog, config)
+    chosen, star_ids, _ = labelled(root, config, mission)
     ids, signals, index = _plan(root, per_class, {0: 0, 1: 0}, 0, star_ids, chosen)
     if not ids:
-        raise ValueError('El catálogo KOI no tiene señales etiquetadas.')
+        raise ValueError('El catálogo no tiene señales etiquetadas.')
     import secrets
     job = secrets.token_hex(8)
     write(manager.folder / job / 'state.json', dict(
-        id=job, kind='cluster', task='build', mission='kepler',
-        name=f'Entrenamiento RF repartido · {per_class} por clase',
+        id=job, kind='cluster', task='build', mission=mission,
+        name=f'Entrenamiento RF {"TESS" if mission == "tess" else "Kepler"} repartido · {per_class} por clase',
         ids=ids, stars={str(k): 'pending' for k in ids}, status='running', current=None,
         pid=None, error=None, created=time.time(),
-        build=dict(per_class=per_class, signals=signals, next_star=index, rounds=1)))
+        build=dict(per_class=per_class, signals=signals, next_star=index, rounds=1, mission=mission)))
     return job
 
 
 def task_for(state, kic):
+    # La misión la añade claim() desde el estado del trabajo.
     return dict(task='build', signals=state['build']['signals'][str(kic)], config=_config().to_dict())
 
 
@@ -133,9 +138,8 @@ def round_done(cluster, state):
     rows, progress, counts = _replay(manager, state)
     per_class = state['build']['per_class']
     if min(counts.values()) < per_class and state['build']['rounds'] < 5:
-        from kepler_detector.builder import selection
-        from kepler_detector.catalog import get_catalog
-        chosen, star_ids = selection(get_catalog(manager.root), _config())
+        from kepler_detector.builder import labelled
+        chosen, star_ids, _ = labelled(manager.root, _config(), _mission(state))
         ids, signals, index = _plan(manager.root, per_class, counts, state['build']['next_star'], star_ids, chosen)
         if ids:
             state['ids'] += ids
@@ -145,29 +149,35 @@ def round_done(cluster, state):
             state['build']['rounds'] += 1
             cluster._log(state['id'], f'Faltan ejemplos {counts}: se reparten {len(ids)} estrellas más')
             return False
-    _write_dataset(manager.root, rows, progress)
+    mission = _mission(state)
+    _write_dataset(manager.root, rows, progress, mission)
+    positive = 'planetas confirmados/conocidos' if mission == 'tess' else 'candidatos'
     state.update(status='training', current=None,
-                 note=f'Conjunto listo: {counts[0]} falsos positivos y {counts[1]} candidatos. Entrenando…')
+                 note=f'Conjunto listo: {counts[0]} falsos positivos y {counts[1]} {positive}. Entrenando…')
     cluster._log(state['id'], state['note'])
-    threading.Thread(target=_train, args=(manager, state['id']), daemon=True).start()
+    threading.Thread(target=_train, args=(manager, state['id'], mission), daemon=True).start()
     return True
 
 
-def _write_dataset(root, rows, progress):
+def _write_dataset(root, rows, progress, mission='kepler'):
+    from kepler_detector import ml_paths
     from kepler_detector.schema import RF_FEATURE_COLUMNS, schema_metadata, timestamp
     from kepler_detector.utils import atomic_csv, atomic_json, file_hash
+    paths = ml_paths.get(mission)
+    catalog = 'data/tess_toi.csv' if mission == 'tess' else 'data/koi_dr25.csv'
     config = _config()
     frame = pd.DataFrame(rows) if rows else pd.DataFrame(columns=['kepid', 'kepoi_name', 'label', *RF_FEATURE_COLUMNS])
-    atomic_csv(frame, root / 'data/training_features.csv')
-    atomic_json(progress, root / 'data/build_progress.json')
+    atomic_csv(frame, root / paths.dataset)
+    atomic_json(progress, root / paths.progress)
     manifest = {'config': config.to_dict(), **schema_metadata(),
-                'catalog_sha256': file_hash(root / 'data/koi_dr25.csv'), 'label_column': 'koi_pdisposition'}
+                'catalog_sha256': file_hash(root / catalog), 'label_column': paths.label_column,
+                **({'mission': mission} if mission != 'kepler' else {})}
     manifest = json.loads(json.dumps(manifest))
     manifest.update(created_at=timestamp(), row_count=len(frame), distributed=True)
-    atomic_json(manifest, root / 'data/build_manifest.json')
+    atomic_json(manifest, root / paths.manifest)
 
 
-def _train(manager, job):
+def _train(manager, job, mission='kepler'):
     """Entrena y evalúa en subprocesos (no bloquea el servidor); registro en el trabajo."""
     log_path = manager.folder / job / 'worker.log'
     status, error = 'completed', None
@@ -175,7 +185,8 @@ def _train(manager, job):
         with log_path.open('ab') as log:
             log.write(f'{time.strftime("%H:%M:%S")} {command} …\n'.encode())
             log.flush()
-            code = subprocess.run([sys.executable, '-u', str(CLI), command, '--root', str(manager.root)],
+            code = subprocess.run([sys.executable, '-u', str(CLI), command, '--root', str(manager.root),
+                                   '--mission', mission],
                                   cwd=str(CLI.parent), stdout=log, stderr=subprocess.STDOUT,
                                   creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0).returncode
         if code:
@@ -184,7 +195,8 @@ def _train(manager, job):
     with manager.lock:
         path = manager.folder / job / 'state.json'
         state = read(path)
-        note = ('Modelo entrenado: models/kepler_rf.joblib. Los ayudantes lo descargarán solos; '
+        model = 'models/tess_rf.joblib' if mission == 'tess' else 'models/kepler_rf.joblib'
+        note = (f'Modelo entrenado: {model}. Los ayudantes lo descargarán solos; '
                 'los próximos análisis ya tendrán probabilidades RF.') if status == 'completed' else None
         state.update(status=status, error=error, note=note or state.get('note'))
         write(path, state)

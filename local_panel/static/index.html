@@ -20,8 +20,8 @@
     <aside>
       <section class="card"><h2>Nuevo análisis</h2><form id="create"><label for="kics" id="kics-label">Identificadores KIC</label><textarea id="kics" placeholder="10854555, 757450" required></textarea><p class="muted small" id="kics-hint">Uno o varios KIC, separados por espacios o comas. Se utiliza la configuración actual del scanner.</p><label class="check" id="distributed-label" hidden><input type="checkbox" id="distributed"> Repartir entre los equipos de la red</label><button type="submit" id="start">＋ Iniciar análisis</button></form></section>
       <section class="card" id="train-card" hidden>
-        <p class="eyebrow">Modelo</p><h2>Entrenar RF repartido</h2>
-        <p class="muted small">Los equipos miden KOI conocidos (planetas candidatos y falsos positivos) y este PC entrena el modelo. Con 500 por clase son unas 800 estrellas.</p>
+        <p class="eyebrow">Modelo</p><h2 id="train-title">Entrenar RF repartido</h2>
+        <p class="muted small" id="train-hint">Los equipos miden KOI conocidos (planetas candidatos y falsos positivos) y este PC entrena el modelo. Con 500 por clase son unas 800 estrellas.</p>
         <label>Ejemplos por clase<input id="train-per-class" type="number" min="20" max="5000" value="500"></label>
         <div class="actions"><button id="train-start">▶ Entrenar con los equipos</button></div>
       </section>

@@ -245,6 +245,41 @@ class DistributedTrainingTests(ClusterBase):
         self.assertIn('models/kepler_rf.joblib', self.cluster.info()['assets'])
         self.assertFalse(self.cluster.no_model())
 
+    def test_distributed_tess_training_writes_tess_model(self):
+        from local_panel import training
+        from test_pipeline import synthetic as make
+        from kepler_detector.mast import cache_path
+        rows = []
+        for n in range(8):
+            rows.append({'tic': 1001 + n, 'toi': f'{100 + n}.01', 'disposition': 'CP' if n % 2 else 'KP', 'period': 3.2})
+            rows.append({'tic': 2001 + n, 'toi': f'{200 + n}.01', 'disposition': 'FP' if n % 2 else 'FA', 'period': 3.2})
+        pd.DataFrame(rows).to_csv(self.root / 'data/tess_toi.csv', index=False)
+        for n in range(8):
+            curve, _ = make(depth=0.003 + 0.0002 * n)
+            save_curve(curve, cache_path(self.helper_root, 1001 + n, mission='tess'))
+            curve, _ = make(depth=0.006, secondary=0.002 + 0.0001 * n)
+            save_curve(curve, cache_path(self.helper_root, 2001 + n, mission='tess'))
+        with self.manager.lock:
+            job = training.create_job(self.manager, 5, mission='tess')
+        state = read(self.root / f'results/local_panel/{job}/state.json')
+        self.assertEqual(state['mission'], 'tess')
+        # Un ayudante que no sabe medir otras misiones no recibe estrellas TESS de entrenamiento.
+        self.assertIsNone(self.cluster.claim('cccccccc33333333', 'viejo', caps=['build', 'missions']))
+        self.helper()
+        for _ in range(240):
+            state = read(self.root / f'results/local_panel/{job}/state.json')
+            if state['status'] in ('completed', 'error'):
+                break
+            time.sleep(0.5)
+        log = (self.root / f'results/local_panel/{job}/worker.log').read_text(encoding='utf-8')
+        self.assertEqual(state['status'], 'completed', log[-3000:])
+        data = pd.read_csv(self.root / 'data/tess_training_features.csv')
+        self.assertEqual(sorted(data.label.value_counts().to_dict().items()), [(0, 5), (1, 5)])
+        self.assertTrue(data.kepoi_name.str.startswith('TOI-').all())
+        self.assertTrue((self.root / 'models/tess_rf.joblib').exists())
+        self.assertFalse((self.root / 'models/kepler_rf.joblib').exists())
+        self.assertIn('models/tess_rf.joblib', self.cluster.info()['assets'])
+
     def test_result_with_old_models_goes_back_to_queue(self):
         job = self.manager.create('123', distributed=True)
         task = self.cluster.claim('aaaaaaaa11111111', 'A')

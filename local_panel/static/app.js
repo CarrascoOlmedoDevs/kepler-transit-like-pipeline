@@ -169,7 +169,11 @@ function renderCluster(cluster) {
   $('cluster-off').hidden = clusterEnabled;
   $('cluster-on').hidden = !clusterEnabled;
   $('distributed-label').hidden = !clusterEnabled;
-  $('train-card').hidden = !clusterEnabled || mission !== 'kepler';
+  $('train-card').hidden = !clusterEnabled || !['kepler', 'tess'].includes(mission);
+  $('train-title').textContent = mission === 'tess' ? 'Entrenar RF de TESS' : 'Entrenar RF repartido';
+  $('train-hint').textContent = mission === 'tess'
+    ? 'Los equipos miden TOI con veredicto TFOPWG (planetas confirmados o conocidos frente a falsos positivos) y este PC entrena un RF propio de TESS.'
+    : 'Los equipos miden KOI conocidos (planetas candidatos y falsos positivos) y este PC entrena el modelo. Con 500 por clase son unas 800 estrellas.';
   $('mode-badge').textContent = clusterEnabled ? 'Red local activa' : 'Solo este PC';
   $('mode-badge').classList.toggle('live', clusterEnabled);
   if (!clusterEnabled) return;
@@ -359,11 +363,12 @@ $('discovery-add').onclick = async () => {
 $('distributed').onchange = () => refresh();
 $('train-start').onclick = async () => {
   const perClass = Number($('train-per-class').value);
-  if (!confirm(`¿Entrenar con ${perClass} ejemplos por clase? Los equipos descargarán curvas de KOI conocidos; puede tardar horas.`)) return;
+  const what = mission === 'tess' ? 'TOI' : 'KOI';
+  if (!confirm(`¿Entrenar el RF de ${mission === 'tess' ? 'TESS' : 'Kepler'} con ${perClass} ejemplos por clase? Los equipos descargarán curvas de ${what} conocidos; puede tardar horas.`)) return;
   try {
-    const job = await api('/api/train/start', {per_class: perClass});
+    const job = await api('/api/train/start', {per_class: perClass, mission});
     selected = job.id;
-    msg('Entrenamiento repartido iniciado: los equipos empezarán a medir KOI.');
+    msg(`Entrenamiento repartido iniciado: los equipos empezarán a medir ${what}.`);
     await refresh();
   } catch (error) { msg(error.message); }
 };

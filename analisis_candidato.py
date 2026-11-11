@@ -19,7 +19,7 @@ from config import Config  # noqa: E402
 from kepler_detector.utils import robust_std  # noqa: E402
 
 DEFAULT = (6881353, 233.9407736958617, 349.9347535910972, 12.636)
-STAR = {6881353: dict(radius=1.46, mass=0.97, teff=6181)}  # KIC/Berger: R☉, M☉, K
+STAR = {6881353: dict(radius=2.293, mass=1.15, teff=6181)}  # Gaia–Kepler (Berger+2020) R☉; masa supuesta (1,0–1,3) M☉; K
 PIXEL_ARCSEC = 3.98
 G, RSUN, MSUN = 6.674e-11, 6.957e8, 1.989e30
 

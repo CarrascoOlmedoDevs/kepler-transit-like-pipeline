@@ -1,12 +1,12 @@
 # KIC 6881353: candidato a tránsito de 234 días
 
 **Estado: candidato débil, no confirmado.** Nada de lo que hay aquí confirma un planeta.
-Autor: Javier Carrasco (Saka) · detectado con Sakanet (pipeline v2.2) · informe del 11 de noviembre de 2026.
+Autor: Javier Carrasco (Saka) · detectado con Sakanet (pipeline v2.2) · informe del 11 de noviembre de 2026 (versión 2: radio estelar corregido).
 
 ## Resumen
 
 KIC 6881353 muestra una señal de tránsito de unos 60 ppm cada 233,94 días, compatible con un planeta de
-unos 1,24 R⊕. No es KOI ni TCE de Kepler. Supera todas las pruebas que permiten los datos de Kepler. El riesgo
+unos 1,9 R⊕ (versión 1: 1,24 R⊕, con el radio estelar antiguo del KIC). No es KOI ni TCE de Kepler. Supera todas las pruebas que permiten los datos de Kepler. El riesgo
 principal es una estrella de Gaia G = 17,4 a 2,65″: un eclipse del 1,1 % en ella imitaría la señal, y los
 datos de Kepler no pueden descartarlo.
 
@@ -17,8 +17,10 @@ datos de Kepler no pueden descartarlo.
 | Kepler magnitude (Kp) | 11,76 | KIC |
 | Gaia DR3 | 2077172048372984192, G = 11,73, RUWE = 1,29 | Gaia DR3 |
 | Temperatura | 6181 K | KIC |
-| Radio / masa | 1,46 R☉ / 0,97 M☉ | KIC |
-| Densidad | 0,31 ρ☉ | derivada |
+| Radio | 2,29 R☉ | Gaia–Kepler (Berger et al. 2020); el KIC antiguo daba 1,46 R☉ |
+| Comprobación del radio | 2,1–2,3 R☉ | paralaje Gaia DR3 (1,641 ± 0,017 mas, d ≈ 609 pc) + G y Teff, con A_G = 0–0,2 |
+| Masa supuesta | 1,0–1,3 M☉ | subgigante F; no medida |
+| Densidad | 0,08–0,11 ρ☉ | derivada |
 | CDPP 6 h | 30,7 ppm | Kepler |
 
 ## La señal
@@ -28,13 +30,13 @@ datos de Kepler no pueden descartarlo.
 | Período | 233,9408 d (otra pasada: 233,9498 d) |
 | Época | BKJD 349,935 (BJD 2455182,935) |
 | Profundidad | 60,4 ± 5,9 ppm |
-| Duración T14 | 13,45 ± 0,66 h (central esperada: 16,6 h) |
+| Duración T14 | 13,45 ± 0,66 h (central esperada: 24–26 h) |
 | Ingreso | 0,65 h |
 | SNR | 9,7–9,8 |
 | Tránsitos con datos | 5: Q6, Q9, Q11, Q14 y Q16 (el de BKJD 349,9 cae en un hueco) |
-| Radio del planeta | ≈ 1,24 R⊕ |
-| Parámetro de impacto | b ≈ 0,59 |
-| Insolación | ≈ 5 S⊕ |
+| Radio del planeta | ≈ 1,9 ± 0,1 R⊕ |
+| Parámetro de impacto | b ≈ 0,83–0,86 |
+| Insolación | ≈ 10–13 S⊕ |
 | Probabilidad RF / CNN | 0,57 / 0,44 |
 
 ![Tránsito plegado](graficas/forma_transito.png)
@@ -48,7 +50,7 @@ datos de Kepler no pueden descartarlo.
 | Curva invertida (suelo de ruido) | señal 9,8 frente a 8,6 | por encima, con poco margen |
 | Contribución máxima de un tránsito | 34 % | no depende de un solo evento |
 | Jackknife | SNR mínimo 81 % | estable |
-| Forma y duración | ingreso 0,65 h, b ≈ 0,59 | compatible con un planeta pequeño |
+| Forma y duración | ingreso 0,65 h, b ≈ 0,85 | compatible con un planeta pequeño |
 | Centroide de flujo | ≈ 0,6 σ | sin desplazamiento |
 | Imagen diferencia | 3,2″ ± 3″ (0,7 σ) | sale de la estrella; excluye fuentes a más de ~10″ |
 
@@ -81,6 +83,9 @@ Con los errores inflados por la dispersión entre eventos, el desplazamiento baj
 | 14,24″–20,49″ | 17,7–20,9 | — | 1,5–28 % | sí |
 
 Eclipse necesario = 60 ppm × 10^(0,4·ΔG).
+
+La vecina de 2,65″ está justo al sur del objetivo (ángulo de posición 182°). La imagen diferencia sitúa la luz que falta
+hacia el este (+3,1″ E, +0,5″ N, ±3″), lejos de ella, pero sólo a ≈ 1,7 σ: la desfavorece sin descartarla.
 
 ## Conclusión y seguimiento
 

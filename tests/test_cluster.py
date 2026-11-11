@@ -10,6 +10,7 @@ import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
+import numpy as np
 import pandas as pd
 
 import ayudante
@@ -245,6 +246,41 @@ class DistributedTrainingTests(ClusterBase):
         self.assertIn('models/kepler_rf.joblib', self.cluster.info()['assets'])
         self.assertFalse(self.cluster.no_model())
 
+    def test_distributed_tess_training_writes_tess_model(self):
+        from local_panel import training
+        from test_pipeline import synthetic as make
+        from kepler_detector.mast import cache_path
+        rows = []
+        for n in range(8):
+            rows.append({'tic': 1001 + n, 'toi': f'{100 + n}.01', 'disposition': 'CP' if n % 2 else 'KP', 'period': 3.2})
+            rows.append({'tic': 2001 + n, 'toi': f'{200 + n}.01', 'disposition': 'FP' if n % 2 else 'FA', 'period': 3.2})
+        pd.DataFrame(rows).to_csv(self.root / 'data/tess_toi.csv', index=False)
+        for n in range(8):
+            curve, _ = make(depth=0.003 + 0.0002 * n)
+            save_curve(curve, cache_path(self.helper_root, 1001 + n, mission='tess'))
+            curve, _ = make(depth=0.006, secondary=0.002 + 0.0001 * n)
+            save_curve(curve, cache_path(self.helper_root, 2001 + n, mission='tess'))
+        with self.manager.lock:
+            job = training.create_job(self.manager, 5, mission='tess')
+        state = read(self.root / f'results/local_panel/{job}/state.json')
+        self.assertEqual(state['mission'], 'tess')
+        # Un ayudante que no sabe medir otras misiones no recibe estrellas TESS de entrenamiento.
+        self.assertIsNone(self.cluster.claim('cccccccc33333333', 'viejo', caps=['build', 'missions']))
+        self.helper()
+        for _ in range(240):
+            state = read(self.root / f'results/local_panel/{job}/state.json')
+            if state['status'] in ('completed', 'error'):
+                break
+            time.sleep(0.5)
+        log = (self.root / f'results/local_panel/{job}/worker.log').read_text(encoding='utf-8')
+        self.assertEqual(state['status'], 'completed', log[-3000:])
+        data = pd.read_csv(self.root / 'data/tess_training_features.csv')
+        self.assertEqual(sorted(data.label.value_counts().to_dict().items()), [(0, 5), (1, 5)])
+        self.assertTrue(data.kepoi_name.str.startswith('TOI-').all())
+        self.assertTrue((self.root / 'models/tess_rf.joblib').exists())
+        self.assertFalse((self.root / 'models/kepler_rf.joblib').exists())
+        self.assertIn('models/tess_rf.joblib', self.cluster.info()['assets'])
+
     def test_result_with_old_models_goes_back_to_queue(self):
         job = self.manager.create('123', distributed=True)
         task = self.cluster.claim('aaaaaaaa11111111', 'A')
@@ -365,3 +401,60 @@ class BatchOverlapTests(ClusterBase):
         self.cluster.release(f'{1:016x}', first, tasks[0]['kic'])
         again = self.cluster.claim('eeeeeeeeeeeeeeee', 'otro', '10.0.0.98')
         self.assertEqual((again['job'], again['kic']), (first, tasks[0]['kic']))
+
+
+class ClaimRetryTests(ClusterBase):
+    def test_claim_with_nothing_to_give_returns_none_without_recursion(self):
+        from local_panel.jobs import write as save
+        # Lote de descubrimiento en marcha sin estrellas pendientes y sin lote siguiente que lanzar.
+        state = dict(id='0123456789abcdef', kind='cluster', mission='kepler', name='lote', ids=[7],
+                     stars={'7': 'running'}, status='running', current=None, pid=None, error=None,
+                     created=time.time(), batch_index=1)
+        save(self.root / 'results/local_panel/0123456789abcdef/state.json', state)
+        calls = []
+        with patch.object(self.manager, '_advance_discovery', side_effect=lambda: calls.append(1)):
+            self.assertIsNone(self.cluster.claim('aaaaaaaa11111111', 'A', caps=['build', 'missions']))
+        self.assertEqual(len(calls), 1)
+
+
+class HelperWithoutTensorFlowTests(ClusterBase):
+    def test_coordinator_scores_cnn_for_helper_without_tensorflow(self):
+        from test_cnn_scorer import predictor
+        curve, _ = synthetic()
+        save_curve(curve, self.helper_root / 'cache/lightcurves/KIC_00000123.npz')
+        # Modelo CNN presente (se sincroniza al ayudante); el contenido no importa: nadie lo carga de verdad.
+        import joblib
+        from sklearn.dummy import DummyClassifier
+        from kepler_detector.schema import RF_FEATURE_COLUMNS, schema_metadata
+        features = pd.DataFrame(np.zeros((4, len(RF_FEATURE_COLUMNS))), columns=RF_FEATURE_COLUMNS)
+        rf = DummyClassifier(strategy='prior').fit(features, [0, 1, 0, 1])
+        joblib.dump({**schema_metadata(), 'model': rf, 'mission': 'kepler'}, self.root / 'models/kepler_rf.joblib')
+        (self.root / 'models/kepler_exominer_lite.keras').write_bytes(b'modelo')
+        (self.root / 'models/kepler_exominer_lite_metadata.json').write_text('{}', encoding='utf-8')
+        self.cluster._hashes.clear()
+        job = self.manager.create('123', distributed=True)
+        loads = []
+
+        def coordinator_or_helper(root):
+            # El ayudante (AMD) no tiene TensorFlow; el coordinador sí.
+            loads.append(Path(root))
+            if Path(root) == self.helper_root:
+                raise RuntimeError('ExoMiner-lite requiere TensorFlow opcional.')
+            return predictor()
+
+        with patch('kepler_detector.cnn.load_predictor', side_effect=coordinator_or_helper), \
+                patch('kepler_detector.scanner.download', side_effect=lambda root, kic, *a, **k:
+                      __import__('kepler_detector.mast', fromlist=['load_curve']).load_curve(
+                          root / f'cache/lightcurves/KIC_{kic:08d}.npz')):
+            self.assertEqual(self.helper(), 1)
+            folder = self.root / f'results/local_panel/{job}/workspace/results/KIC_123'
+            for _ in range(100):
+                if not (folder / 'cnn_inputs.npz').exists():
+                    break
+                time.sleep(0.1)
+        frame = pd.read_csv(folder / 'candidates.csv')
+        self.assertTrue(len(frame))
+        self.assertTrue(frame.cnn_probability.notna().all(), frame.cnn_probability.tolist())
+        self.assertAlmostEqual(float(frame.cnn_probability.iloc[0]), 0.73)
+        self.assertFalse((folder / 'cnn_inputs.npz').exists())
+        self.assertIn(self.helper_root, loads)

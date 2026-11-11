@@ -267,7 +267,8 @@ def process_build(client, root, task, stop, started):
         if config.to_dict() != Config().to_dict():
             raise RuntimeError('Configuración distinta a la de este equipo; actualiza Sakanet')
         log.info('KIC %s: midiendo %d KOI para entrenar…', kic, len(task['signals']))
-        results = star_records(root, kic, [tuple(s) for s in task['signals']], config)
+        results = star_records(root, kic, [tuple(s) for s in task['signals']], config,
+                               mission=task.get('mission', 'kepler'))
     except Exception as error:
         stop.set()
         traceback.print_exc()
@@ -300,7 +301,7 @@ def run_worker(server, token, helper, name, root, idle_exit=False, max_tasks=Non
     done, idle, current = 0, 0, None
     try:
         while max_tasks is None or done < max_tasks:
-            task = retrying(lambda: client.post('/cluster/v1/claim', caps=['build', 'missions']), 'pedir trabajo', attempts=1000)
+            task = retrying(lambda: client.post('/cluster/v1/claim', caps=['build', 'missions', 'build-missions']), 'pedir trabajo', attempts=1000)
             if accepted and task.get('code_version') and task['code_version'] != accepted:
                 # El coordinador se ha reiniciado con código nuevo: soltar la estrella y actualizarse.
                 if task.get('job'):

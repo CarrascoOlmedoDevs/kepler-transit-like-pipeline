@@ -119,6 +119,8 @@ class Manager:
         self.replenishing = set()
         self.import_blind()
         self.ensure_cnn_state()
+        from kepler_detector import triage
+        triage.set_bad_days(read(self.root / 'data/bad_days.json', {}).get('days', []))
         for path in self.folder.glob('*/state.json'):
             state = read(path)
             if state.get('kind') == 'cluster':
@@ -671,6 +673,15 @@ class Manager:
     def _watch_key(kic, mission):
         return str(int(kic)) if mission == 'kepler' else f'{mission}:{int(kic)}'
 
+    def _update_bad_days(self, candidates):
+        """Recalcula los días malos de Kepler con todas las estrellas y los aplica al triage."""
+        from kepler_detector import systematics, triage
+        result = systematics.bad_days(candidates)
+        triage.set_bad_days(result['days'])
+        previous = read(self.root / 'data/bad_days.json', {})
+        if previous.get('days') != result['days'] or previous.get('stars') != result['stars']:
+            write(self.root / 'data/bad_days.json', dict(result, updated=time.time()))
+
     def overview(self, mission=None):
         """Último resultado de cada estrella de una misión en todos los trabajos + seguimiento."""
         from kepler_detector.triage import assess_candidate
@@ -686,26 +697,31 @@ class Manager:
                     latest[int(kic)] = state
         rows, labels, without_model, recent = [], {}, set(), []
         rank_order = {'prioritario': 0, 'revisar': 1, 'débil': 2, 'debil': 2, 'descartable': 3}
+        candidates = {}
+        for kic, state in latest.items():
+            with (self.star_folder(state, kic) / 'candidates.csv').open(encoding='utf-8', newline='') as stream:
+                candidates[kic] = list(csv.DictReader(stream))
+        if mission == 'kepler':
+            self._update_bad_days(candidates)
         for kic, state in latest.items():
             path = self.star_folder(state, kic) / 'candidates.csv'
             best = None
-            with path.open(encoding='utf-8', newline='') as stream:
-                for row in csv.DictReader(stream):
-                    assessment = assess_candidate(row)
-                    label = assessment['triage_label']
-                    labels[label] = labels.get(label, 0) + 1
-                    key = (rank_order.get(label, 4), -self._float(row.get('priority_score')))
-                    if best is None or key < best[0]:
-                        best = (key, row, label)
-                    if str(row.get('rf_available', '')).lower() != 'true':
-                        without_model.add(kic)
-                    if label not in ('prioritario', 'revisar'):
-                        continue
-                    item = {key: row.get(key, '') for key in self.OVERVIEW_FIELDS}
-                    item.update(kic=kic, job=state['id'], analyzed=state['created'],
-                                by=(state.get('done_by') or {}).get(str(kic), ''),
-                                label=label, reason=assessment['triage_reason'])
-                    rows.append(item)
+            for row in candidates[kic]:
+                assessment = assess_candidate(row)
+                label = assessment['triage_label']
+                labels[label] = labels.get(label, 0) + 1
+                key = (rank_order.get(label, 4), -self._float(row.get('priority_score')))
+                if best is None or key < best[0]:
+                    best = (key, row, label)
+                if str(row.get('rf_available', '')).lower() != 'true':
+                    without_model.add(kic)
+                if label not in ('prioritario', 'revisar'):
+                    continue
+                item = {key: row.get(key, '') for key in self.OVERVIEW_FIELDS}
+                item.update(kic=kic, job=state['id'], analyzed=state['created'],
+                            by=(state.get('done_by') or {}).get(str(kic), ''),
+                            label=label, reason=assessment['triage_reason'])
+                rows.append(item)
             # "Últimas analizadas": la mejor señal de cada estrella (o su curva completa si no hay).
             entry = dict(kic=kic, job=state['id'], finished=path.stat().st_mtime,
                          by=(state.get('done_by') or {}).get(str(kic), ''), label=None)

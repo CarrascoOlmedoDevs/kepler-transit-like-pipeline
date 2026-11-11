@@ -56,6 +56,9 @@ def parser():
             target.add_argument('--tic', type=int, help='Estrella TESS (TIC); también --sector N')
             sub.add_argument('--sector', '--campaign', dest='segment', type=int,
                              help='Alias de --quarter para sectores TESS o campañas K2')
+        if name in ('build', 'train', 'evaluate'):
+            sub.add_argument('--mission', choices=('kepler', 'tess'), default='kepler',
+                             help='Modelo a construir/entrenar: kepler (KOI DR25) o tess (TOI con disposición TFOPWG)')
         if name == 'scan-list':
             sub.add_argument('--mission', choices=('kepler', 'k2', 'tess'), default='kepler',
                              help='Telescopio; columnas aceptadas: kepid / epic / tic o target_id')
@@ -120,13 +123,13 @@ def main(argv=None):
             print(f'{len(targets(root, args.limit, args.force))} objetivos')
         elif args.command == 'build':
             from kepler_detector.builder import build
-            print(build(root, config, args.per_class, args.force, args.retry_failed))
+            print(build(root, config, args.per_class, args.force, args.retry_failed, args.mission))
         elif args.command == 'train':
             from kepler_detector.ml import train
-            print(json.dumps(train(root, args.seed, args.test_size), indent=2))
+            print(json.dumps(train(root, args.seed, args.test_size, args.mission), indent=2))
         elif args.command == 'evaluate':
             from kepler_detector.ml import evaluate
-            print(json.dumps(evaluate(root), indent=2))
+            print(json.dumps(evaluate(root, args.mission), indent=2))
         elif args.command == 'cnn-build':
             from kepler_detector.cnn import build_dataset
             print(json.dumps(build_dataset(root, config, args.force, args.limit), indent=2))

@@ -11,6 +11,11 @@ from .bls import search
 from .features import extract
 from .utils import atomic_csv, atomic_json, read_frame, file_hash
 from .schema import RF_FEATURE_COLUMNS, schema_metadata, compatible, read_manifest, timestamp
+from . import ml_paths
+
+# Disposiciones TFOPWG: planeta confirmado/conocido frente a falso positivo/falsa alarma.
+# Los PC (aún sin veredicto) se excluyen: muchos acabarán siendo falsos positivos.
+TESS_LABELS = {'CP': 1, 'KP': 1, 'FP': 0, 'FA': 0}
 
 
 def selection(catalog, config):
@@ -23,6 +28,35 @@ def selection(catalog, config):
     return chosen, star_ids
 
 
+def tess_selection(toi, config):
+    """TOI con disposición TFOPWG definitiva, con las mismas columnas que `selection`."""
+    frame = toi.copy()
+    frame['disposition'] = frame['disposition'].astype(str).str.strip().str.upper()
+    frame = frame[frame.disposition.isin(TESS_LABELS)]
+    period = pd.to_numeric(frame.period, errors='coerce')
+    tic = pd.to_numeric(frame.tic, errors='coerce')
+    chosen = pd.DataFrame({'kepid': tic, 'kepoi_name': 'TOI-' + frame.toi.astype(str),
+                           'koi_period': period, 'label': frame.disposition.map(TESS_LABELS)})
+    chosen = chosen[np.isfinite(chosen.koi_period) & (chosen.koi_period > max(config.durations))
+                    & chosen.kepid.notna()].drop_duplicates('kepoi_name')
+    chosen['kepid'] = chosen.kepid.astype(int)
+    chosen['label'] = chosen.label.astype(int)
+    star_ids = chosen.kepid.unique()
+    np.random.default_rng(config.seed).shuffle(star_ids)
+    return chosen.reset_index(drop=True), star_ids
+
+
+def labelled(root, config, mission='kepler'):
+    """(señales etiquetadas, orden de estrellas, ruta del catálogo) para la misión."""
+    if mission == 'tess':
+        from .tess import get_toi_catalog, TOI_PATH
+        chosen, star_ids = tess_selection(get_toi_catalog(root), config)
+        return chosen, star_ids, root / TOI_PATH
+    ml_paths.get(mission)
+    chosen, star_ids = selection(get_catalog(root), config)
+    return chosen, star_ids, root / 'data/koi_dr25.csv'
+
+
 def signal_record(curve, config, kic, kepoi_name, period, label):
     """Variables de un KOI con BLS guiado por su periodo conocido (mismo esquema RF)."""
     candidates, _ = search(curve, config, known_period=period)
@@ -33,10 +67,10 @@ def signal_record(curve, config, kic, kepoi_name, period, label):
     return {'kepid': int(kic), 'kepoi_name': kepoi_name, 'label': int(label), **features}
 
 
-def star_records(root, kic, signals, config):
-    """Para el reparto: descarga una estrella y mide todos sus KOI.
-    signals = [(kepoi_name, period, label), ...]. Un fallo de descarga se propaga."""
-    curve = preprocess(download(root, int(kic), config.quarter), config)
+def star_records(root, kic, signals, config, mission='kepler'):
+    """Para el reparto: descarga una estrella y mide todos sus KOI/TOI.
+    signals = [(nombre, period, label), ...]. Un fallo de descarga se propaga."""
+    curve = preprocess(download(root, int(kic), config.quarter, mission=mission), config)
     results = []
     for name, period, label in signals:
         try:
@@ -46,20 +80,23 @@ def star_records(root, kic, signals, config):
     return results
 
 
-def build(root, config, per_class=500, force=False, retry_failed=False):
+def build(root, config, per_class=500, force=False, retry_failed=False, mission='kepler'):
     if per_class < 1:
         raise ValueError('per-class debe ser positivo')
+    paths = ml_paths.get(mission)
     logger = logging.getLogger('kepler')
-    (root / 'logs/build_errors.log').touch(exist_ok=True)
-    catalog = get_catalog(root)
-    manifest_path = root / 'data/build_manifest.json'
+    errors = root / paths.errors
+    errors.touch(exist_ok=True)
+    chosen, star_ids, catalog_path = labelled(root, config, mission)
+    manifest_path = root / paths.manifest
     manifest = {'config': config.to_dict(), **schema_metadata(),
-                'catalog_sha256': file_hash(root / 'data/koi_dr25.csv'), 'label_column': 'koi_pdisposition'}
+                'catalog_sha256': file_hash(catalog_path), 'label_column': paths.label_column,
+                **({'mission': mission} if mission != 'kepler' else {})}
     # Serialización uniforme (tuplas -> listas).
     manifest = json.loads(json.dumps(manifest))
-    previous = read_manifest(root)
-    path = root / 'data/training_features.csv'
-    progress_path = root / 'data/build_progress.json'
+    previous = read_manifest(root, mission)
+    path = root / paths.dataset
+    progress_path = root / paths.progress
     if not force and any(p.exists() for p in (path, progress_path, manifest_path)):
         if not compatible(previous):
             logger.warning('Training feature cache is incompatible with the current feature schema.\n'
@@ -79,7 +116,6 @@ def build(root, config, per_class=500, force=False, retry_failed=False):
     completed = {r['kepoi_name'] for r in rows}
     counts = {label: sum(r['label'] == label for r in rows) for label in (0, 1)}
     # Orden fijo por estrella: reutiliza curva/preprocesamiento para varios KOI.
-    chosen, star_ids = selection(catalog, config)
     for kic in star_ids:
         signals = [row for row in chosen[chosen.kepid == kic].itertuples()
                    if counts[row.label] < per_class and row.kepoi_name not in completed
@@ -88,13 +124,13 @@ def build(root, config, per_class=500, force=False, retry_failed=False):
             continue
         start = time.monotonic()
         try:
-            curve = preprocess(download(root, int(kic), config.quarter), config)
+            curve = preprocess(download(root, int(kic), config.quarter, mission=mission), config)
         except Exception as error:
             detail = traceback.format_exc()
             for row in signals:
                 progress[row.kepoi_name] = {'status': 'failed', 'kepid': int(kic), 'error': str(error)}
-            with open(root / 'logs/build_errors.log', 'a', encoding='utf-8') as stream:
-                stream.write(f'KIC {kic}\n{detail}\n')
+            with open(errors, 'a', encoding='utf-8') as stream:
+                stream.write(f'{kic}\n{detail}\n')
             logger.warning('Build KIC %s falló: %s', kic, error)
             atomic_json(progress, progress_path)
             continue
@@ -112,7 +148,7 @@ def build(root, config, per_class=500, force=False, retry_failed=False):
                 progress[row.kepoi_name] = {'status': 'complete', 'kepid': int(kic)}
             except Exception as error:
                 progress[row.kepoi_name] = {'status': 'failed', 'kepid': int(kic), 'error': str(error)}
-                with open(root / 'logs/build_errors.log', 'a', encoding='utf-8') as stream:
+                with open(errors, 'a', encoding='utf-8') as stream:
                     stream.write(f'{row.kepoi_name}\n{traceback.format_exc()}\n')
                 logger.warning('Build %s falló: %s', row.kepoi_name, error)
             atomic_json(progress, progress_path)
@@ -121,5 +157,5 @@ def build(root, config, per_class=500, force=False, retry_failed=False):
         if min(counts.values()) >= per_class:
             break
     if min(counts.values()) < per_class:
-        logger.warning('Dataset parcial: %s; consulte logs/build_errors.log', counts)
+        logger.warning('Dataset parcial: %s; consulte %s', counts, paths.errors)
     return counts

@@ -13,7 +13,7 @@ from .bls import (search, transit_mask, duplicate, harmonic_info, CandidateFamil
 from .features import extract, transit_consistency, FEATURES, CONSISTENCY_FEATURES
 from .vetting import vet, priority_score
 from .crossmatch import match
-from .ml import load_model, predict
+from .ml import load_model, predict, model_path
 from .schema import FEATURE_SCHEMA_HASH
 from .utils import setup, fingerprint, file_hash, atomic_csv, atomic_json
 from . import FEATURE_VERSION, PIPELINE_VERSION
@@ -152,7 +152,7 @@ def read_candidates(path):
 
 
 def signature(root, config, no_model=False, mission='kepler'):
-    model = root / 'models/kepler_rf.joblib'
+    model = model_path(root, mission)
     cnn_model = root / 'models/kepler_exominer_lite.keras'
     cnn_metadata = root / 'models/kepler_exominer_lite_metadata.json'
     catalog = root / 'data/koi_dr25.csv'
@@ -177,19 +177,29 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None, mission
     started = time.monotonic()
     output = root / 'results' / info.folder(kic)
     output.mkdir(parents=True, exist_ok=True)
+    (output / 'cnn_inputs.npz').unlink(missing_ok=True)  # entradas CNN de un análisis anterior
     meta_path = output / 'metadata.json'
-    artifact = None if no_model else load_model(root)
+    artifact = None if no_model else load_model(root, mission)
+    # Probabilidades válidas sólo si el modelo se entrenó con datos de esta misión.
+    rf_calibrated = bool(artifact) and artifact.get('mission', 'kepler') == mission
     cnn_predictor = None
+    # Sin TensorFlow (ayudantes AMD) pero con modelo CNN: se guardan las entradas y el coordinador puntúa.
+    cnn_deferred = False
+    cnn_pending = {}
     if not no_model:
         try:
             from .cnn import load_predictor
             cnn_predictor = load_predictor(root)
         except RuntimeError as error:
-            logger.warning('CNN no disponible: %s', error)
+            cnn_deferred = (root / 'models/kepler_exominer_lite.keras').exists()
+            logger.warning('CNN no disponible: %s%s', error,
+                           '; el coordinador la calculará' if cnn_deferred else '')
     sig = signature(root, config, no_model, mission)
-    if not info.calibrated and not no_model:
+    if not info.calibrated and not no_model and not rf_calibrated:
         logger.warning('%s: RF/CNN entrenados con Kepler; probabilidades no calibradas para %s',
                        name, info.lk_mission)
+    elif not info.calibrated and not no_model:
+        logger.info('%s: RF propio de %s; la CNN sigue siendo de Kepler', name, info.lk_mission)
     if meta_path.exists() and not force:
         previous = json.loads(meta_path.read_text(encoding='utf-8'))
         if previous.get('signature') == sig and previous.get('status') == 'complete':
@@ -268,10 +278,16 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None, mission
                 cnn_probability = predict_candidate(cnn_predictor, residual, selected, features)
             except ValueError as error:
                 logger.warning('%s: candidato CNN no medible: %s', name, error)
+        elif cnn_deferred:
+            try:
+                from .cnn import candidate_inputs
+                cnn_pending[iteration + 1] = candidate_inputs(residual, selected, features)
+            except ValueError as error:
+                logger.warning('%s: candidato CNN no medible: %s', name, error)
         vetting = vet(combined, config.min_snr, config.min_transits)
         ident = ({'kepid': int(kic)} if mission == 'kepler' else
                  {'mission': mission, 'target': name, 'target_id': int(kic),
-                  'model_calibrated': False})
+                  'model_calibrated': rf_calibrated, 'cnn_calibrated': False})
         row = {**ident, 'detection_order': iteration + 1, 'epoch_bkjd': selected.epoch,
                **combined, 'rf_probability': rf, 'rf_available': artifact is not None,
                'cnn_probability': cnn_probability, 'cnn_available': cnn_predictor is not None,
@@ -292,6 +308,9 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None, mission
         found.append(selected)
         logger.info('%s: candidato P=%.6fd SNR=%.2f RF=%s CNN=%s',
                     name, selected.period, features['depth_snr'], rf, cnn_probability)
+    if cnn_pending:
+        from .cnn import save_pending_inputs
+        save_pending_inputs(output / 'cnn_inputs.npz', cnn_pending)
     plotting.periodogram(first_result, output / 'bls_periodogram.png')
     families = build_families(rows, found, curve.time) if rows else []
     raw = pd.DataFrame(rows)
@@ -311,8 +330,10 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None, mission
         result['harmonic_detections'] = sum(row['family_relation'] == 'harmonic' for row in rows)
     atomic_csv(result, output / 'candidates.csv')
     extra = {} if mission == 'kepler' else {
-        'mission': mission, 'target': name, 'model_calibrated': False,
-        'model_warning': 'RF/CNN entrenados con Kepler DR25: usar sus probabilidades sólo como orientación'}
+        'mission': mission, 'target': name, 'model_calibrated': rf_calibrated,
+        'model_warning': ('RF propio entrenado con disposiciones TFOPWG; la CNN es de Kepler y no cuenta para el triage'
+                          if rf_calibrated else
+                          'RF/CNN entrenados con Kepler DR25: usar sus probabilidades sólo como orientación')}
     atomic_json({'status': 'complete', 'signature': sig, 'kic': int(kic), **extra, 'config': config.to_dict(),
                  'source': curve.metadata, 'feature_version': FEATURE_VERSION,
                  'raw_detections': len(rows), 'candidate_families': len(families),
@@ -355,7 +376,7 @@ def scan_list(root, input_path, config, limit=None, workers=1, force=False, no_m
         raise ValueError(f'CSV de entrada debe incluir una columna: {", ".join(info.id_columns)}')
     kics = list(dict.fromkeys(frame[column].dropna().astype(int)))[:limit]
     if not no_model:
-        load_model(root)  # Error global de configuración, antes de lanzar estrellas.
+        load_model(root, mission)  # Error global de configuración, antes de lanzar estrellas.
     suffix = '' if mission == 'kepler' else f'_{mission}'
     checkpoint = root / f'results/batch_progress{suffix}.json'
     progress = json.loads(checkpoint.read_text(encoding='utf-8')) if checkpoint.exists() else {}

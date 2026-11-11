@@ -30,7 +30,7 @@ HELPER_TTL = 120             # Ayudante "conectado" si habló en los últimos 2 
 ASSETS = ('models/kepler_rf.joblib', 'models/tess_rf.joblib', 'models/kepler_exominer_lite.keras',
           'models/kepler_exominer_lite_metadata.json', 'data/koi_dr25.csv', 'data/tce_dr25.csv',
           'data/tess_toi.csv')
-RESULT_FILES = re.compile(r'(candidates|detections)\.csv|metadata\.json|'
+RESULT_FILES = re.compile(r'(candidates|detections)\.csv|metadata\.json|cnn_inputs\.npz|'
                           r'(lightcurve|detrended_lightcurve|bls_periodogram|candidate_[0-9]{2}_folded)\.png')
 HELPER_ID = re.compile(r'[A-Za-z0-9_-]{8,64}')
 
@@ -103,6 +103,9 @@ class Cluster:
         self.code_manifest = {name: hashlib.sha256(content).hexdigest() for name, content in self.code.items()}
         self.code_version = code_version(self.code_manifest)
         self.leases = {}                  # (job, kic) -> {helper, expires}
+        from local_panel.cnn_scorer import CNNScorer
+        self.cnn_scorer = CNNScorer(self.root, log=self._log,
+                                    done=lambda job, kic, folder, mission: self._record_evidence(job, kic, folder, mission))
         self.helpers = {}                 # helper_id -> estado visible en el panel
         self._hashes = {}
         self.server = None
@@ -358,14 +361,21 @@ class Cluster:
             self._refresh_current(state)
             self._save(state)
             self._log(job, f"{entry['name']}: FIN {self._name(state, kic)}: complete")
-            try:
-                if mission == 'kepler':
-                    from kepler_detector.evidence import record_serious_evidence
-                    record_serious_evidence(self.root, job, int(kic), folder)
-            except Exception as error:  # El resultado científico sigue siendo válido.
-                self._log(job, f'AVISO informe de evidencias {self._name(state, kic)}: {error}')
+            if (folder / 'cnn_inputs.npz').exists():
+                # Ayudante sin TensorFlow: la CNN la calcula este PC; las evidencias se registran después.
+                self.cnn_scorer.submit(job, int(kic), folder, mission)
+            else:
+                self._record_evidence(job, int(kic), folder, mission)
             self._finish_if_done(state)
             return dict(ok=True)
+
+    def _record_evidence(self, job, kic, folder, mission):
+        try:
+            if mission == 'kepler':
+                from kepler_detector.evidence import record_serious_evidence
+                record_serious_evidence(self.root, job, int(kic), folder)
+        except Exception as error:  # El resultado científico sigue siendo válido.
+            self._log(job, f'AVISO informe de evidencias KIC {kic}: {error}')
 
     def submit_build(self, helper, job, kic, results, name=None):
         kic = str(kic)
@@ -434,6 +444,8 @@ class Cluster:
             raise ValueError('candidates.csv contiene otra estrella')
         if any(name.endswith('.png') and not content.startswith(b'\x89PNG') for name, content in files.items()):
             raise ValueError('Imagen inválida en el resultado')
+        if 'cnn_inputs.npz' in files and not files['cnn_inputs.npz'].startswith(b'PK'):
+            raise ValueError('Entradas CNN inválidas en el resultado')
 
     def _finish_if_done(self, state):
         self._refresh_current(state)
@@ -498,6 +510,14 @@ class Cluster:
     # ------------------------------------------------------------------ servidor HTTP
     def start(self):
         cluster = self
+        backlog = []
+        for state in self._jobs():
+            for kic, status in state.get('stars', {}).items():
+                if status == 'complete':
+                    folder = self.manager.star_folder(state, int(kic))
+                    if (folder / 'cnn_inputs.npz').exists():
+                        backlog.append((state['id'], int(kic), folder, state.get('mission', 'kepler')))
+        self.cnn_scorer.backlog(backlog)
 
         class Handler(BaseHTTPRequestHandler):
             server_version = 'SakanetCluster/1'

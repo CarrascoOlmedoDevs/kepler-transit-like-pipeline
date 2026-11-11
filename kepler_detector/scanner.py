@@ -177,17 +177,23 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None, mission
     started = time.monotonic()
     output = root / 'results' / info.folder(kic)
     output.mkdir(parents=True, exist_ok=True)
+    (output / 'cnn_inputs.npz').unlink(missing_ok=True)  # entradas CNN de un análisis anterior
     meta_path = output / 'metadata.json'
     artifact = None if no_model else load_model(root, mission)
     # Probabilidades válidas sólo si el modelo se entrenó con datos de esta misión.
     rf_calibrated = bool(artifact) and artifact.get('mission', 'kepler') == mission
     cnn_predictor = None
+    # Sin TensorFlow (ayudantes AMD) pero con modelo CNN: se guardan las entradas y el coordinador puntúa.
+    cnn_deferred = False
+    cnn_pending = {}
     if not no_model:
         try:
             from .cnn import load_predictor
             cnn_predictor = load_predictor(root)
         except RuntimeError as error:
-            logger.warning('CNN no disponible: %s', error)
+            cnn_deferred = (root / 'models/kepler_exominer_lite.keras').exists()
+            logger.warning('CNN no disponible: %s%s', error,
+                           '; el coordinador la calculará' if cnn_deferred else '')
     sig = signature(root, config, no_model, mission)
     if not info.calibrated and not no_model and not rf_calibrated:
         logger.warning('%s: RF/CNN entrenados con Kepler; probabilidades no calibradas para %s',
@@ -272,6 +278,12 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None, mission
                 cnn_probability = predict_candidate(cnn_predictor, residual, selected, features)
             except ValueError as error:
                 logger.warning('%s: candidato CNN no medible: %s', name, error)
+        elif cnn_deferred:
+            try:
+                from .cnn import candidate_inputs
+                cnn_pending[iteration + 1] = candidate_inputs(residual, selected, features)
+            except ValueError as error:
+                logger.warning('%s: candidato CNN no medible: %s', name, error)
         vetting = vet(combined, config.min_snr, config.min_transits)
         ident = ({'kepid': int(kic)} if mission == 'kepler' else
                  {'mission': mission, 'target': name, 'target_id': int(kic),
@@ -296,6 +308,9 @@ def scan(root, kic, config, force=False, no_model=False, semaphore=None, mission
         found.append(selected)
         logger.info('%s: candidato P=%.6fd SNR=%.2f RF=%s CNN=%s',
                     name, selected.period, features['depth_snr'], rf, cnn_probability)
+    if cnn_pending:
+        from .cnn import save_pending_inputs
+        save_pending_inputs(output / 'cnn_inputs.npz', cnn_pending)
     plotting.periodogram(first_result, output / 'bls_periodogram.png')
     families = build_families(rows, found, curve.time) if rows else []
     raw = pd.DataFrame(rows)

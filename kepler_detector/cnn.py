@@ -466,18 +466,45 @@ def load_predictor(root):
     }
 
 
+def candidate_inputs(curve, candidate, features):
+    """Entradas de la CNN sin TensorFlow: vistas + variables sin normalizar.
+    Los ayudantes sin TensorFlow las guardan y el coordinador las puntúa."""
+    inputs = dict(make_views(curve, candidate))
+    inputs["scalars"] = np.asarray([features.get(name, np.nan) for name in RF_FEATURE_COLUMNS], dtype=float)
+    return inputs
+
+
+def predict_inputs(predictor, inputs):
+    if predictor is None:
+        return np.nan
+    normalized = _transform_scalars(
+        np.asarray(inputs["scalars"], dtype=float).reshape(1, -1),
+        predictor["median"], predictor["mean"], predictor["std"]
+    )
+    batch = {name: np.expand_dims(np.asarray(inputs[name]), axis=0) for name in VIEW_SPEC}
+    batch["scalars"] = normalized
+    probability = predictor["model"].predict(batch, verbose=0).reshape(-1)
+    return float(probability[0])
+
+
 def predict_candidate(predictor, curve, candidate, features):
     """Score one pipeline candidate without changing RF ranking or vetting."""
     if predictor is None:
         return np.nan
-    views = make_views(curve, candidate)
-    scalar_values = np.asarray(
-        [[features.get(name, np.nan) for name in RF_FEATURE_COLUMNS]], dtype=float
-    )
-    normalized = _transform_scalars(
-        scalar_values, predictor["median"], predictor["mean"], predictor["std"]
-    )
-    inputs = {name: np.expand_dims(values, axis=0) for name, values in views.items()}
-    inputs["scalars"] = normalized
-    probability = predictor["model"].predict(inputs, verbose=0).reshape(-1)
-    return float(probability[0])
+    return predict_inputs(predictor, candidate_inputs(curve, candidate, features))
+
+
+def save_pending_inputs(path, pending):
+    """pending: {detection_order: inputs} → un .npz sin objetos (seguro de leer)."""
+    arrays = {f"{order}__{name}": np.asarray(values, dtype=float)
+              for order, inputs in pending.items() for name, values in inputs.items()}
+    np.savez_compressed(path, **arrays)
+
+
+def load_pending_inputs(path):
+    pending = {}
+    with np.load(path, allow_pickle=False) as data:
+        for key in data.files:
+            order, name = key.split("__", 1)
+            pending.setdefault(int(order), {})[name] = data[key]
+    return pending

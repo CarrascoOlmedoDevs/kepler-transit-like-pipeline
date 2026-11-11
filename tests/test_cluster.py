@@ -10,6 +10,7 @@ import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
+import numpy as np
 import pandas as pd
 
 import ayudante
@@ -414,3 +415,46 @@ class ClaimRetryTests(ClusterBase):
         with patch.object(self.manager, '_advance_discovery', side_effect=lambda: calls.append(1)):
             self.assertIsNone(self.cluster.claim('aaaaaaaa11111111', 'A', caps=['build', 'missions']))
         self.assertEqual(len(calls), 1)
+
+
+class HelperWithoutTensorFlowTests(ClusterBase):
+    def test_coordinator_scores_cnn_for_helper_without_tensorflow(self):
+        from test_cnn_scorer import predictor
+        curve, _ = synthetic()
+        save_curve(curve, self.helper_root / 'cache/lightcurves/KIC_00000123.npz')
+        # Modelo CNN presente (se sincroniza al ayudante); el contenido no importa: nadie lo carga de verdad.
+        import joblib
+        from sklearn.dummy import DummyClassifier
+        from kepler_detector.schema import RF_FEATURE_COLUMNS, schema_metadata
+        features = pd.DataFrame(np.zeros((4, len(RF_FEATURE_COLUMNS))), columns=RF_FEATURE_COLUMNS)
+        rf = DummyClassifier(strategy='prior').fit(features, [0, 1, 0, 1])
+        joblib.dump({**schema_metadata(), 'model': rf, 'mission': 'kepler'}, self.root / 'models/kepler_rf.joblib')
+        (self.root / 'models/kepler_exominer_lite.keras').write_bytes(b'modelo')
+        (self.root / 'models/kepler_exominer_lite_metadata.json').write_text('{}', encoding='utf-8')
+        self.cluster._hashes.clear()
+        job = self.manager.create('123', distributed=True)
+        loads = []
+
+        def coordinator_or_helper(root):
+            # El ayudante (AMD) no tiene TensorFlow; el coordinador sí.
+            loads.append(Path(root))
+            if Path(root) == self.helper_root:
+                raise RuntimeError('ExoMiner-lite requiere TensorFlow opcional.')
+            return predictor()
+
+        with patch('kepler_detector.cnn.load_predictor', side_effect=coordinator_or_helper), \
+                patch('kepler_detector.scanner.download', side_effect=lambda root, kic, *a, **k:
+                      __import__('kepler_detector.mast', fromlist=['load_curve']).load_curve(
+                          root / f'cache/lightcurves/KIC_{kic:08d}.npz')):
+            self.assertEqual(self.helper(), 1)
+            folder = self.root / f'results/local_panel/{job}/workspace/results/KIC_123'
+            for _ in range(100):
+                if not (folder / 'cnn_inputs.npz').exists():
+                    break
+                time.sleep(0.1)
+        frame = pd.read_csv(folder / 'candidates.csv')
+        self.assertTrue(len(frame))
+        self.assertTrue(frame.cnn_probability.notna().all(), frame.cnn_probability.tolist())
+        self.assertAlmostEqual(float(frame.cnn_probability.iloc[0]), 0.73)
+        self.assertFalse((folder / 'cnn_inputs.npz').exists())
+        self.assertIn(self.helper_root, loads)
